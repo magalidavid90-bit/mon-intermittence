@@ -349,6 +349,7 @@ tr.now td{background:#FDF1F2}
     </div>
     <div id="copyBox"></div>
   </div>
+  <div class="card" style="margin-top:16px" id="syncCard"></div>
   <div class="card" style="margin-top:16px">
     <h2>Les règles utilisées</h2>
     <div id="rules"></div>
@@ -356,7 +357,7 @@ tr.now td{background:#FDF1F2}
 </section>
   <footer style="margin-top:40px;padding-top:18px;border-top:1px solid var(--line);font-size:12.5px;color:var(--muted);line-height:1.7">
     Mon Intermittence donne des <b>estimations</b> à partir des règles publiques de l'assurance chômage (annexes 8 et 10). Elles ne remplacent pas les décisions de France Travail.
-    Tes données restent sur ton appareil : rien n'est envoyé sur un serveur.<br>
+    Tes données restent sur ton appareil. Si tu actives la synchronisation, elles sont chiffrées avant de partir : personne d'autre que toi ne peut les lire.<br>
     Une création <b>Altéa RH</b>, en partenariat avec <b>Studio Concorde</b>.<br>
     <a href="mentions-legales.html">Mentions légales</a> · <a href="cgv.html">Conditions de vente</a> · <a href="confidentialite.html">Confidentialité</a>
   </footer>
@@ -497,7 +498,7 @@ function renderHeader(){
   let b="";if(da){const j=Math.round((da-t)/864e5);b+=`<span class="badge">Date anniversaire <b>${fd(da)}</b></span>`}
   b+=isPro()?`<span class="badge hide-m">⭐ Version complète</span>`:`<button class="badge" style="background:none;cursor:pointer;font:inherit;color:#E6E3DC" onclick="openPay()">⭐ Version complète</button>`;
   if(!estInstallee())b+=`<button class="badge" style="background:none;cursor:pointer;font:inherit;color:#E6E3DC" onclick="aideInstall()">📲 Installer</button>`;
-  b+=`<span class="badge status hide-m" id="saveBadge">Enregistré sur cet appareil</span>`;
+  b+=`<span class="badge status hide-m" id="saveBadge">${SY&&isPro()&&syDispo()?"☁️ Synchronisé":"Enregistré sur cet appareil"}</span>`;
   $("hBadges").innerHTML=b;
 }
 function kpi(lab,val,hint,cls=""){return `<div class="card kpi"><div class="lab">${lab}</div><div class="val ${cls}">${val}</div><div class="hint">${hint}</div></div>`}
@@ -813,8 +814,8 @@ function renderConges(){const el=$("congesBody");if(!el)return;const t=today();c
   <p>Tes employeurs du spectacle ne te paient pas de congés directement : ils cotisent à la caisse des Congés Spectacles, gérée par Audiens. L'indemnité vaut <b>10 % des salaires bruts</b> déclarés entre le 1er avril et le 31 mars.</p>
   <p>Elle n'arrive pas toute seule : il faut la <b>demander chaque année</b>, à partir de la mi-avril, sur ton espace personnel Congés Spectacles (avec ton numéro Congés Spectacles), au moins 15 jours avant ton départ en congé et au plus tard le 31 mars suivant.</p>
   <p class="small">Estimation : Audiens calcule sur la « base congés » déclarée par chaque employeur, qui peut différer du brut. Un employeur qui ne cotise pas à la caisse ne génère pas de droits. Indique le montant reçu une fois l'indemnité versée.</p></div>`}
-function renderPro(){document.querySelectorAll(".lock").forEach(e=>e.textContent=isPro()?"":"🔒");const t=$("tileProTxt");if(t)t.textContent=isPro()?"Activée sur cet appareil. Merci !":`${CONFIG.prix} à vie : lecture illimitée des AEM, employeurs, congés spectacles, argent mois par mois.`}
-function renderAll(){renderPro();renderScan();renderConges();renderDocs();renderHeader();renderProjection();renderDash();renderContrats();renderEmployeurs();renderMois();renderSimu();renderParams()}
+function renderPro(){document.querySelectorAll(".lock").forEach(e=>e.textContent=isPro()?"":"🔒");const t=$("tileProTxt");if(t)t.textContent=isPro()?(finEssai()?`Version d'essai activée jusqu'au ${fd(D(finEssai()))}.`:"Activée sur cet appareil. Merci !"):`${CONFIG.prix} à vie : lecture illimitée des AEM, employeurs, congés spectacles, argent mois par mois.`}
+function renderAll(){renderSync();renderPro();renderScan();renderConges();renderDocs();renderHeader();renderProjection();renderDash();renderContrats();renderEmployeurs();renderMois();renderSimu();renderParams()}
 
 /* ============ ACTIONS ============ */
 function go(t){if(PRO_SECTIONS[t]&&!isPro()){openPay(`« ${PRO_SECTIONS[t]} » fait partie de la version complète.`);return}const nt=["mois","employeurs","simu","params","conges"].includes(t)?"plus":t;document.querySelectorAll("nav button").forEach(b=>b.classList.toggle("on",b.dataset.t===nt));window.scrollTo(0,0);document.querySelectorAll("main section").forEach(s=>s.classList.toggle("on",s.id==="s-"+t));if(location.hash!=="#"+t)history.replaceState(null,"","#"+t)}
@@ -870,23 +871,47 @@ $("impJson").onchange=async e=>{const f=e.target.files[0];if(!f)return;try{const
 /* ============ CONFIGURATION DE LA VENTE ============ */
 const CONFIG={
   prix:"9,90 €",
-  lienAchat:"",          // lien de paiement Lemon Squeezy (à remplir)
-  produitId:"",          // identifiant du produit Lemon Squeezy (vérification des clés)
+  lienAchat:"",          // lien de paiement (plateforme à choisir)
+  produitId:"",          // identifiant du produit sur la plateforme de paiement
   lecturesGratuites:5,   // lectures automatiques offertes dans la version gratuite
-  cleTest:"ESSAI-2026"   // clé d'essai, valable seulement tant que produitId est vide
+  // Synchronisation téléphone + ordinateur (Supabase) : adresse du projet et clé publique "anon"/"publishable"
+  supabaseUrl:"",
+  supabaseCle:"",
+  // Clés offertes (seules leurs empreintes sont ici ; les clés sont gardées par Altéa RH).
+  // fin : dernier jour de validité (null = à vie). Supprimer une ligne désactive la clé.
+  clesOffertes:[
+  {h:"83cf656f6cbc9b4193d1ce344b1fd67ab736d88fe2834dc2b2d54c84b7e71e26",fin:null}, // Pass à vie 1
+  {h:"db2d650eff4e1a224596e2725e049cd95e5658ed65ae18f0048b4311d96ea0a2",fin:null}, // Pass à vie 2
+  {h:"e0a35c713a1ad29098e4287c7dad575b161b38c9bb9ce3a2a0a4fc483fcde862",fin:"2027-11-30"}, // Testeur 1
+  {h:"852874d1a42b5de3930f9ca29bcdbe7a6315d72869544a896d49eca3d00d0aa5",fin:"2027-11-30"}, // Testeur 2
+  {h:"5adce55de499bd6cc058496ca72a44cfc943d900f718f0c89d6e90adf41ba749",fin:"2027-11-30"}, // Testeur 3
+  {h:"4e3cf126b2d11f09e804c686f76250bbf40e57775748fdde775b061219bbe00f",fin:"2027-11-30"}, // Testeur 4
+  {h:"505ca7f4281e20df509f82cd481386d0ad16c6d608844d141f9a531aa53fd97d",fin:"2027-11-30"}, // Testeur 5
+  {h:"d882d131426bc59d83577c7be03b359c8299b311feb40f8757bcdcf85f86a95a",fin:"2027-11-30"}, // Testeur 6
+  {h:"764e284250c8ba0a8df5ac2f18b02bce9cf7ab92f28858feb8ad0d1e2b95d7a9",fin:"2027-11-30"}, // Testeur 7
+  {h:"a376e21a8a3c9e35a77cf2a918ab9f214814cc1eae148b0b3e87e866ea201fd0",fin:"2027-11-30"}, // Testeur 8
+  {h:"5f65f6188d5b30484a7e586aab902da2af746d87401a707453acb60c09c0ded5",fin:"2027-11-30"}, // Testeur 9
+  {h:"b19e556f0727809891ed9ae615ceeca9fe438241d66e870eb99f4b675d432ac1",fin:"2027-11-30"}, // Testeur 10
+  ]
 };
 const LSK="mon-intermittence-licence";
 function licence(){try{return JSON.parse(localStorage.getItem(LSK)||"null")}catch(e){return null}}
-function isPro(){const l=licence();return !!(l&&l.ok)}
+function cleOfferte(h){return (CONFIG.clesOffertes||[]).find(c=>c.h===h)}
+function finEssai(){const l=licence();if(!l||!l.ok||!l.h)return null;const c=cleOfferte(l.h);return c?c.fin:null}
+function isPro(){const l=licence();if(!l||!l.ok)return false;if(l.h){const c=cleOfferte(l.h);if(!c)return false;if(c.fin&&iso(today())>c.fin)return false}return true}
+function essaiTermine(){const l=licence();if(!l||!l.ok||!l.h)return null;const c=cleOfferte(l.h);return c&&c.fin&&iso(today())>c.fin?c.fin:null}
+async function hashCle(k){const b=await crypto.subtle.digest("SHA-256",new TextEncoder().encode("mi-licence:"+String(k).toUpperCase().replace(/[^A-Z0-9]/g,"")));return [...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,"0")).join("")}
 const PRO_SECTIONS={employeurs:"Mes employeurs",conges:"Mes congés spectacles",mois:"Mon argent mois par mois",simu:"Et si…"};
 function openPay(raison){const m=$("payMod");const restant=Math.max(0,CONFIG.lecturesGratuites-(S.lectures||0));
   m.querySelector(".card").innerHTML=`<div class="split"><h2>⭐ Version complète</h2><button class="link" onclick="$('payMod').classList.remove('on')">Fermer</button></div>
   ${raison?`<p class="small" style="margin-top:4px">${esc(raison)}</p>`:""}
+  ${essaiTermine()?`<p class="note" style="margin:8px 0">Ta période d'essai de la version complète s'est terminée le ${fd(D(essaiTermine()))}. Tes données sont toujours là : pour continuer avec la version complète, il suffit de l'acheter.</p>`:""}
   <ul style="line-height:1.8;padding-left:20px;margin:10px 0">
     <li>Lecture automatique de toutes tes AEM et documents France Travail (version gratuite : ${CONFIG.lecturesGratuites}, il t'en reste ${restant})</li>
     <li>Mes employeurs : heures, salaires et taux horaire par employeur</li>
     <li>Mes congés spectacles : indemnité Audiens estimée et rappel avant le 31 mars</li>
     <li>Mon argent mois par mois et le simulateur « Et si… »</li>
+    <li>La synchronisation entre ton téléphone et ton ordinateur, chiffrée</li>
     <li>Les mises à jour des barèmes chaque année</li></ul>
   <div class="num" style="font-size:28px;font-weight:600;margin:6px 0">${CONFIG.prix} <span class="small">une seule fois, à vie</span></div>
   <div class="actions">${CONFIG.lienAchat?`<a class="b red" href="${esc(CONFIG.lienAchat)}" target="_blank" rel="noopener" style="text-decoration:none">Acheter la version complète</a>`:`<span class="b ghost" style="cursor:default">Achat bientôt disponible</span>`}</div>
@@ -896,7 +921,10 @@ function openPay(raison){const m=$("payMod");const restant=Math.max(0,CONFIG.lec
   m.classList.add("on");$("licGo").onclick=()=>activer($("licKey").value.trim())}
 async function activer(key){const msg=$("licMsg");if(!key){msg.textContent="Colle d'abord ta clé.";return}
   msg.textContent="Vérification…";
-  if(!CONFIG.produitId){if(key.toUpperCase()===CONFIG.cleTest){localStorage.setItem(LSK,JSON.stringify({ok:true,key,test:true,date:iso(today())}));msg.innerHTML='<span class="ok">✅ Version complète activée.</span>';renderAll();return}msg.innerHTML='<span class="bad">Clé non reconnue.</span>';return}
+  const h=await hashCle(key),off=cleOfferte(h);
+  if(off){if(off.fin&&iso(today())>off.fin){msg.innerHTML=`<span class="bad">Cette clé d'essai a pris fin le ${fd(D(off.fin))}.</span>`;return}
+    localStorage.setItem(LSK,JSON.stringify({ok:true,h,offerte:true,date:iso(today())}));msg.innerHTML=`<span class="ok">✅ Version complète activée${off.fin?` jusqu'au ${fd(D(off.fin))}`:""}.</span>`;renderAll();return}
+  if(!CONFIG.produitId){msg.innerHTML='<span class="bad">Clé non reconnue. Vérifie-la (les tirets et les majuscules ne comptent pas).</span>';return}
   try{const r=await fetch("https://api.lemonsqueezy.com/v1/licenses/activate",{method:"POST",headers:{"Accept":"application/json","Content-Type":"application/x-www-form-urlencoded"},body:new URLSearchParams({license_key:key,instance_name:"appareil-"+Math.random().toString(36).slice(2,8)})});
     const j=await r.json();
     if(j.activated&&(!CONFIG.produitId||String(j.meta&&j.meta.product_id)===String(CONFIG.produitId))){localStorage.setItem(LSK,JSON.stringify({ok:true,key,instance:j.instance&&j.instance.id,date:iso(today())}));msg.innerHTML='<span class="ok">✅ Version complète activée. Merci !</span>';renderAll()}
@@ -1071,10 +1099,99 @@ async function offer(filename,data){
 const LS="mon-intermittence-v1";
 function lsGet(){try{return JSON.parse(localStorage.getItem(LS)||"null")}catch(e){return null}}
 function lsSet(){try{localStorage.setItem(LS,JSON.stringify(S));return true}catch(e){return false}}
-function save(){if(!lsSet())setBadge("⚠️ Sauvegarde impossible")}
+function save(){noterSuppressions();if(!lsSet())setBadge("⚠️ Sauvegarde impossible");syMarquer()}
 function setBadge(t){const b=$("saveBadge");if(b)b.textContent=t}
 function adopt(o){o=JSON.parse(JSON.stringify(o||{}));const v=VIDE();
   S={...v,...o,profil:{...v.profil,...(o.profil||{})},bareme:{...v.bareme,...(o.bareme||{})},contrats:o.contrats||[],areRecue:o.areRecue||{},documents:o.documents||[],conges:o.conges||{}}}
+
+/* ============ SYNCHRONISATION (chiffrée sur l'appareil, version complète) ============ */
+// Le code de synchronisation (20 caractères) ne quitte jamais l'appareil : il sert à calculer
+// l'adresse du coffre en ligne (empreinte) et la clé de chiffrement (AES-GCM). Le serveur ne voit
+// qu'un paquet illisible.
+const SYK="mon-intermittence-sync";
+let SY=(()=>{try{return JSON.parse(localStorage.getItem(SYK)||"null")}catch(e){return null}})();
+let syBusy=false,syEncore=false,syTimer=null,syRev=0,syMsg="",syConnus=null;
+function sySave(){if(SY)localStorage.setItem(SYK,JSON.stringify(SY));else localStorage.removeItem(SYK)}
+const syDispo=()=>!!(CONFIG.supabaseUrl&&CONFIG.supabaseCle);
+const syActif=()=>!!(SY&&syDispo()&&isPro());
+const ALPH="ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+const normCode=c=>String(c||"").toUpperCase().replace(/[^A-Z0-9]/g,"");
+const fmtCode=c=>c.match(/.{1,4}/g).join("-");
+function nouveauCode(){return [...crypto.getRandomValues(new Uint8Array(20))].map(x=>ALPH[x%32]).join("")}
+function b64(u){u=new Uint8Array(u);let s="";for(let i=0;i<u.length;i+=8192)s+=String.fromCharCode.apply(null,u.subarray(i,i+8192));return btoa(s)}
+const unb64=s=>Uint8Array.from(atob(s),c=>c.charCodeAt(0));
+async function sha(t){return new Uint8Array(await crypto.subtle.digest("SHA-256",new TextEncoder().encode(t)))}
+const hex=u=>[...u].map(x=>x.toString(16).padStart(2,"0")).join("");
+const syId=async code=>hex(await sha("mi-coffre:"+code));
+const syCle=async code=>crypto.subtle.importKey("raw",await sha("mi-cle:"+code),"AES-GCM",false,["encrypt","decrypt"]);
+async function chiffrer(code,obj){const iv=crypto.getRandomValues(new Uint8Array(12));const ct=await crypto.subtle.encrypt({name:"AES-GCM",iv},await syCle(code),new TextEncoder().encode(JSON.stringify(obj)));return "v1."+b64(iv)+"."+b64(ct)}
+async function dechiffrer(code,s){const p=String(s).split(".");const pt=await crypto.subtle.decrypt({name:"AES-GCM",iv:unb64(p[1])},await syCle(code),unb64(p[2]));return JSON.parse(new TextDecoder().decode(pt))}
+async function rpc(f,args){const k=CONFIG.supabaseCle,h={"Content-Type":"application/json","apikey":k};if(/^eyJ/.test(k))h.Authorization="Bearer "+k;
+  const r=await fetch(CONFIG.supabaseUrl.replace(/\/+$/,"")+"/rest/v1/rpc/"+f,{method:"POST",headers:h,body:JSON.stringify(args),cache:"no-store"});
+  if(!r.ok)throw new Error("serveur "+r.status);const t=await r.text();return t?JSON.parse(t):null}
+// Suppressions : on garde la trace des contrats supprimés pour qu'ils ne reviennent pas d'un autre appareil
+function idsContrats(o){return new Set((o.contrats||[]).map(c=>c.id))}
+function noterSuppressions(){const now=idsContrats(S);if(syConnus){const sup=S.supprimes||{};let n=0;for(const id of syConnus)if(!now.has(id)){sup[id]=Date.now();n++}
+  if(n){const lim=Date.now()-400*864e5;for(const k in sup)if(sup[k]<lim)delete sup[k];S.supprimes=sup}}syConnus=now}
+function fusion(a,b){const sup={...(b.supprimes||{}),...(a.supprimes||{})};
+  const cle=x=>x.id||[x.nom,x.date,x.resume].join("|");
+  const parId=(x,y)=>{const m=new Map();for(const it of (y||[]))m.set(cle(it),it);for(const it of (x||[]))m.set(cle(it),it);return [...m.values()].filter(it=>!(it.id&&sup[it.id]))};
+  const conges={...(b.conges||{})};for(const y in (a.conges||{}))conges[y]={...(conges[y]||{}),...a.conges[y]};
+  return {...b,...a,supprimes:sup,contrats:parId(a.contrats,b.contrats),documents:parId(a.documents,b.documents),areRecue:{...(b.areRecue||{}),...(a.areRecue||{})},conges,lectures:Math.max(a.lectures||0,b.lectures||0)}}
+function syMarquer(){if(!SY)return;syRev++;SY.sale=true;sySave();clearTimeout(syTimer);syTimer=setTimeout(synchro,2000)}
+function syRecu(o){adopt(o);syConnus=idsContrats(S);lsSet()}
+async function synchro(){
+  if(!syActif())return;if(syBusy){syEncore=true;return}
+  if(!navigator.onLine){syMsg="Hors connexion : la synchronisation reprendra toute seule.";renderSync();return}
+  syBusy=true;try{
+    for(let essai=0;essai<4;essai++){
+      const rows=await rpc("lire_coffre",{p_id:SY.id});const row=rows&&rows[0];
+      if(row&&Number(row.maj)!==SY.base){const dist=await dechiffrer(SY.code,row.donnees);syRecu(SY.sale?fusion(S,dist):dist);SY.base=Number(row.maj);sySave();renderAll()}
+      if(row&&!SY.sale)break;
+      const rev=syRev,maj=Math.max(Date.now(),(SY.base||0)+1);
+      const res=await rpc("ecrire_coffre",{p_id:SY.id,p_donnees:await chiffrer(SY.code,S),p_maj:maj,p_base:row?Number(row.maj):null});
+      if(Number(res)===maj){SY.base=maj;SY.sale=syRev!==rev;sySave();if(!SY.sale)break}
+    }
+    SY.der=Date.now();sySave();syMsg="";
+  }catch(e){syMsg="La synchronisation n'a pas pu se faire. Elle sera retentée automatiquement.";console.warn(e)}
+  finally{syBusy=false;renderSync();renderHeader();if(syEncore){syEncore=false;synchro()}}}
+async function syDemarrer(){if(!isPro()){openPay("La synchronisation fait partie de la version complète.");return}
+  const code=nouveauCode();SY={code,id:await syId(code),base:null,sale:true,der:null,montrer:true};sySave();renderAll();await synchro()}
+async function syRejoindre(saisie){const out=$("syErr");const code=normCode(saisie);
+  if(code.length!==20){out.textContent="Le code fait 20 caractères (lettres et chiffres).";return}
+  if(!navigator.onLine){out.textContent="Il faut une connexion internet pour relier cet appareil.";return}
+  out.textContent="Recherche de tes données…";
+  try{const id=await syId(code);const rows=await rpc("lire_coffre",{p_id:id});const row=rows&&rows[0];
+    if(!row){out.textContent="Aucune donnée trouvée avec ce code. Vérifie-le sur ton autre appareil (Plus › Réglages › Synchronisation).";return}
+    let dist;try{dist=await dechiffrer(code,row.donnees)}catch(e){out.textContent="Ce code ne permet pas d'ouvrir les données. Vérifie-le.";return}
+    const vide=S.demo||(!S.contrats.length&&!S.profil.finOuverture&&!S.profil.dateAnnivForcee);
+    syRecu(vide?dist:fusion(S,dist));SY={code,id,base:Number(row.maj),sale:!vide,der:Date.now()};sySave();renderAll();
+    if(!vide)await synchro();
+  }catch(e){out.textContent="Connexion impossible pour l'instant. Réessaie dans un moment."}}
+function syArreter(btn){if(!btn.dataset.ok){btn.dataset.ok=1;btn.textContent="Confirmer : arrêter sur cet appareil ?";setTimeout(()=>{btn.textContent="Arrêter la synchronisation sur cet appareil";delete btn.dataset.ok},4000);return}
+  SY=null;sySave();renderAll()}
+function depuis(t){if(!t)return"jamais";const m=Math.round((Date.now()-t)/6e4);return m<1?"à l'instant":m<60?`il y a ${m} min`:m<1440?`il y a ${Math.round(m/60)} h`:fd(new Date(t))}
+function renderSync(){const el=$("syncCard");if(!el)return;
+  let h=`<h2>☁️ Synchronisation téléphone + ordinateur</h2>`;
+  if(!syDispo()){el.innerHTML=h+`<p class="small" style="margin-top:0">Bientôt disponible : tu pourras retrouver tes données sur ton téléphone et ton ordinateur.</p>`;return}
+  if(!isPro()){el.innerHTML=h+`<p class="small" style="margin-top:0">Retrouve les mêmes données sur ton téléphone et ton ordinateur, chiffrées : personne d'autre que toi ne peut les lire.</p><button class="b" onclick="openPay('La synchronisation fait partie de la version complète.')">⭐ Version complète</button>`;return}
+  if(!SY){el.innerHTML=h+`<p class="small" style="margin-top:0">Tes données sont chiffrées sur ton appareil avant de partir : ni Altéa RH ni l'hébergeur ne peuvent les lire. Un code de 20 caractères relie tes appareils.</p>
+    <h3>C'est mon premier appareil</h3><button class="b" onclick="syDemarrer()">Activer la synchronisation</button>
+    <h3 style="margin-top:16px">J'ai déjà un code (autre appareil)</h3>
+    <div style="display:flex;gap:8px;flex-wrap:wrap"><input id="syCode" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="XXXX-XXXX-XXXX-XXXX-XXXX" style="flex:1;min-width:220px;border:1px solid var(--line);border-radius:8px;padding:10px;font:14px 'JetBrains Mono',monospace"><button class="b" onclick="syRejoindre($('syCode').value)">Relier cet appareil</button></div>
+    <div class="small bad" id="syErr" style="margin-top:8px"></div>`;return}
+  const code=fmtCode(SY.code);
+  el.innerHTML=h+`<p style="margin-top:0">${syMsg?`<span class="bad">${esc(syMsg)}</span>`:syBusy?"Synchronisation en cours…":`✅ Synchronisé ${depuis(SY.der)}.`}</p>
+    <p class="small">Pour retrouver tes données sur un autre appareil : ouvre l'appli dessus, va dans <b>Plus › Réglages › Synchronisation</b> et saisis ce code. <b>Garde-le précieusement</b> (photo, note) : sans lui, impossible de relier un nouvel appareil.</p>
+    <div id="syCodeBox" style="font:600 17px 'JetBrains Mono',monospace;letter-spacing:.5px;background:var(--paper,#fff);border:1px dashed var(--line);border-radius:8px;padding:10px 12px;margin:8px 0;word-break:break-all">${SY.montrer?code:"••••-••••-••••-••••-••••"}</div>
+    <div class="toolbar"><button class="b ghost" onclick="SY.montrer=!SY.montrer;sySave();renderSync()">${SY.montrer?"Masquer le code":"Afficher le code"}</button>
+    <button class="b ghost" onclick="navigator.clipboard&&navigator.clipboard.writeText('${code}').then(()=>{this.textContent='Code copié ✓'})">Copier le code</button>
+    <button class="b ghost" onclick="synchro()">Synchroniser maintenant</button>
+    <button class="b ghost" style="color:var(--red)" onclick="syArreter(this)">Arrêter la synchronisation sur cet appareil</button></div>`}
+window.syDemarrer=syDemarrer;window.syRejoindre=syRejoindre;window.syArreter=syArreter;window.synchro=synchro;
+document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible")synchro()});
+window.addEventListener("online",()=>synchro());
+setInterval(()=>{if(document.visibilityState==="visible")synchro()},60000);
 
 /* ============ APPLI INSTALLABLE ============ */
 let promptInstall=null;
@@ -1092,8 +1209,8 @@ window.aideInstall=aideInstall;window.openPay=openPay;
 if("serviceWorker" in navigator&&location.protocol.startsWith("http"))navigator.serviceWorker.register("sw.js").catch(()=>{});
 
 (function init(){
-  const l=lsGet();if(l)adopt(l);
-  renderAll();const h=location.hash.slice(1);if(h&&$("s-"+h))go(h);
+  const l=lsGet();if(l)adopt(l);syConnus=idsContrats(S);
+  renderAll();synchro();const h=location.hash.slice(1);if(h&&$("s-"+h))go(h);
 })();
 </script>
 </body>

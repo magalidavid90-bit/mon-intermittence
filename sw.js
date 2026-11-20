@@ -1,5 +1,5 @@
 // Mon Intermittence : fonctionnement hors ligne
-const VERSION="mi-v2";
+const VERSION="mi-v3";
 const FICHIERS=["./","index.html","manifest.webmanifest","vendor/pdf.min.js","vendor/pdf.worker.min.js","icons/icon-192.png","icons/icon-512.png","mentions-legales.html","cgv.html","confidentialite.html"];
 self.addEventListener("install",e=>{e.waitUntil(caches.open(VERSION).then(c=>c.addAll(FICHIERS)).then(()=>self.skipWaiting()))});
 self.addEventListener("activate",e=>{e.waitUntil(caches.keys().then(k=>Promise.all(k.filter(x=>x!==VERSION).map(x=>caches.delete(x)))).then(()=>self.clients.claim()))});

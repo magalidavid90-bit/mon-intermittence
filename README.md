@@ -15,6 +15,7 @@ Outil de suivi pour les intermittents du spectacle (annexes 8 et 10) : compteur 
 | `sw.js` | Fonctionnement hors ligne |
 | `manifest.webmanifest`, `icons/` | Installation sur téléphone |
 | `vendor/` | pdf.js (lecture des PDF) |
+| `supabase.sql` | À coller une fois dans Supabase pour la synchronisation |
 | `mentions-legales.html`, `cgv.html`, `confidentialite.html` | Pages légales, à compléter |
 
 ## Réglages de la vente
@@ -25,7 +26,8 @@ En haut de la section `CONFIGURATION DE LA VENTE` dans `index.html` :
 - `lienAchat` : lien de paiement Lemon Squeezy
 - `produitId` : identifiant du produit Lemon Squeezy (vérification des clés)
 - `lecturesGratuites` : nombre de lectures automatiques offertes
-- `cleTest` : clé d'essai, valable seulement tant que `produitId` est vide
+- `supabaseUrl`, `supabaseCle` : projet Supabase pour la synchronisation (voir plus bas)
+- `clesOffertes` : clés gratuites (2 à vie, 10 d'essai jusqu'au 30/11/2027). Seules les empreintes des clés sont dans le code ; les clés elles-mêmes sont gardées par Altéa RH. Supprimer une ligne désactive la clé ; changer `fin` change la date de fin.
 
 ## À mettre à jour chaque année
 
@@ -48,3 +50,10 @@ Code du bouton à transmettre au webmaster de Studio Concorde :
   Mon Intermittence · suivre mes 507 h
 </a>
 ```
+
+## Synchronisation téléphone + ordinateur (version complète)
+
+- Chiffrée sur l'appareil (AES-GCM) avec un code de 20 caractères généré par l'appli. Le serveur ne reçoit qu'un paquet illisible, sans nom ni e-mail.
+- Le premier appareil active la synchronisation et affiche le code ; les autres appareils saisissent ce code (Plus › Réglages › Synchronisation).
+- Si les deux appareils ont été modifiés en même temps, les contrats sont fusionnés (les suppressions sont respectées).
+- Mise en place : créer un projet Supabase (région Europe), coller `supabase.sql` dans SQL Editor, puis reporter l'adresse du projet et la clé publique dans `supabaseUrl` et `supabaseCle`.
