@@ -5,7 +5,7 @@ Outil de suivi pour les intermittents du spectacle (annexes 8 et 10) : compteur 
 - **Appli web installable** (PWA) : icône sur l'écran d'accueil, fonctionne hors ligne.
 - **Données sur l'appareil** de l'utilisateur (localStorage) : aucun serveur, aucun compte. Sauvegarde par export/import d'un fichier.
 - **Lecture des PDF sans IA**, sur l'appareil, avec pdf.js (`vendor/`).
-- **Version gratuite / complète** : déverrouillage par clé de licence (plateforme de paiement à choisir : Lemon Squeezy n'accepte plus de nouveaux vendeurs).
+- **Version gratuite / complète** : 9,90 € pour 1 an, vendue par Polar (revendeur officiel), déverrouillage par clé de licence Polar.
 
 ## Fichiers
 
@@ -22,17 +22,21 @@ Outil de suivi pour les intermittents du spectacle (annexes 8 et 10) : compteur 
 
 En haut de la section `CONFIGURATION DE LA VENTE` dans `index.html` :
 
-- `prix` : prix affiché
-- `lienAchat` : lien de paiement Lemon Squeezy
-- `produitId` : identifiant du produit Lemon Squeezy (vérification des clés)
+- `ventesOuvertes` : `false` tant que la vente n'est pas ouverte (le bouton d'achat est remplacé par « Version complète bientôt disponible » ; la saisie d'une clé reste possible). Passer à `true` pour vendre.
+- `prix`, `duree` : prix et durée affichés (« 9,90 € pour 1 an »)
+- `lienAchat` : lien d'achat Polar
+- `polarOrgId` : identifiant de l'organisation Polar (activation et vérification des clés)
 - `lecturesGratuites` : nombre de lectures automatiques offertes
-- `supabaseUrl`, `supabaseCle` : projet Supabase pour la synchronisation (voir plus bas)
+- `cleTest` : clé d'essai `ESSAI-2026`, acceptée **uniquement en local** (localhost / 127.0.0.1)
+- `supabaseUrl`, `supabaseCle` : synchronisation, option future (vide = désactivée et invisible)
 
-## Clés offertes (2 à vie, 10 d'essai jusqu'au 30/11/2027)
+## Clés de licence (Polar)
 
-- Enregistrées dans Supabase (table `licences`, créée par `supabase.sql`) : seule l'empreinte de chaque clé y figure, les clés elles-mêmes sont gardées par Altéa RH.
-- **Une clé ne s'active que sur un seul appareil.** Les autres appareils de la même personne obtiennent la version complète en se reliant par la synchronisation.
-- Supabase > Table Editor > `licences` : vider la case `appareil` libère une clé (changement de téléphone) ; modifier `fin` prolonge ou arrête un essai (vide = à vie) ; supprimer la ligne désactive la clé (l'appareil la perd au plus tard le lendemain).
+- Activation : `POST https://api.polar.sh/v1/customer-portal/license-keys/activate` (`key`, `organization_id`, `label`), 3 appareils maximum par clé.
+- Revérification au plus une fois par semaine si l'appareil est en ligne (`.../validate` avec `activation_id`). Clé révoquée, expirée ou appareil libéré → retour à la version gratuite. Hors ligne ou erreur réseau : la licence est conservée.
+- Si Polar indique une date d'expiration (`expires_at`), elle est affichée et respectée.
+- Après paiement, Polar renvoie vers `?achat=ok` : l'appli remercie et ouvre directement le champ de saisie de la clé.
+- Le client libère un appareil depuis son espace client Polar.
 
 ## À mettre à jour chaque année
 
@@ -56,7 +60,7 @@ Code du bouton à transmettre au webmaster de Studio Concorde :
 </a>
 ```
 
-## Synchronisation téléphone + ordinateur (version complète)
+## Synchronisation téléphone + ordinateur (option future, désactivée)
 
 - Chiffrée sur l'appareil (AES-GCM) avec un code de 20 caractères généré par l'appli. Le serveur ne reçoit qu'un paquet illisible, sans nom ni e-mail.
 - Le premier appareil active la synchronisation et affiche le code ; les autres appareils saisissent ce code (Plus › Réglages › Synchronisation).

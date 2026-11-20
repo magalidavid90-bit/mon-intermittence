@@ -357,7 +357,7 @@ tr.now td{background:#FDF1F2}
 </section>
   <footer style="margin-top:40px;padding-top:18px;border-top:1px solid var(--line);font-size:12.5px;color:var(--muted);line-height:1.7">
     Mon Intermittence donne des <b>estimations</b> à partir des règles publiques de l'assurance chômage (annexes 8 et 10). Elles ne remplacent pas les décisions de France Travail.
-    Tes données restent sur ton appareil. Si tu actives la synchronisation, elles sont chiffrées avant de partir : personne d'autre que toi ne peut les lire.<br>
+    Tes données restent sur ton appareil : rien n'est envoyé sur un serveur.<br>
     Une création <b>Altéa RH</b>, en partenariat avec <b>Studio Concorde</b>.<br>
     <a href="mentions-legales.html">Mentions légales</a> · <a href="cgv.html">Conditions de vente</a> · <a href="confidentialite.html">Confidentialité</a>
   </footer>
@@ -814,7 +814,7 @@ function renderConges(){const el=$("congesBody");if(!el)return;const t=today();c
   <p>Tes employeurs du spectacle ne te paient pas de congés directement : ils cotisent à la caisse des Congés Spectacles, gérée par Audiens. L'indemnité vaut <b>10 % des salaires bruts</b> déclarés entre le 1er avril et le 31 mars.</p>
   <p>Elle n'arrive pas toute seule : il faut la <b>demander chaque année</b>, à partir de la mi-avril, sur ton espace personnel Congés Spectacles (avec ton numéro Congés Spectacles), au moins 15 jours avant ton départ en congé et au plus tard le 31 mars suivant.</p>
   <p class="small">Estimation : Audiens calcule sur la « base congés » déclarée par chaque employeur, qui peut différer du brut. Un employeur qui ne cotise pas à la caisse ne génère pas de droits. Indique le montant reçu une fois l'indemnité versée.</p></div>`}
-function renderPro(){document.querySelectorAll(".lock").forEach(e=>e.textContent=isPro()?"":"🔒");const t=$("tileProTxt");if(t)t.textContent=isPro()?(finEssai()?`Version d'essai activée jusqu'au ${fd(D(finEssai()))}.`:"Activée sur cet appareil. Merci !"):`${CONFIG.prix} à vie : lecture illimitée des AEM, employeurs, congés spectacles, argent mois par mois.`}
+function renderPro(){document.querySelectorAll(".lock").forEach(e=>e.textContent=isPro()?"":"🔒");const t=$("tileProTxt");if(t)t.textContent=isPro()?(licence().expire?`Activée jusqu'au ${fd(new Date(licence().expire))}. Merci !`:"Activée sur cet appareil. Merci !"):`${CONFIG.prix} ${CONFIG.duree} : lecture illimitée des AEM, employeurs, congés spectacles, argent mois par mois.`}
 function renderAll(){renderSync();renderPro();renderScan();renderConges();renderDocs();renderHeader();renderProjection();renderDash();renderContrats();renderEmployeurs();renderMois();renderSimu();renderParams()}
 
 /* ============ ACTIONS ============ */
@@ -871,65 +871,67 @@ $("impJson").onchange=async e=>{const f=e.target.files[0];if(!f)return;try{const
 /* ============ CONFIGURATION DE LA VENTE ============ */
 const CONFIG={
   prix:"9,90 €",
-  lienAchat:"",          // lien de paiement (plateforme à choisir)
-  produitId:"",          // identifiant du produit sur la plateforme de paiement
+  duree:"pour 1 an",     // durée d'accès affichée à côté du prix
+  ventesOuvertes:false,  // false = bouton d'achat caché (« Version complète bientôt disponible ») ; passer à true quand le SIRET est là
+  lienAchat:"https://buy.polar.sh/polar_cl_N5Oew4MaxWrsvXFmlQSD1WE38Dawus81LNIuz4ctLgd", // lien d'achat Polar
+  polarOrgId:"d1d82a96-825d-4207-89f1-466c5eb5214e", // organisation Polar (activation et vérification des clés)
+  cleTest:"ESSAI-2026",  // clé d'essai, acceptée uniquement en local (localhost / 127.0.0.1)
   lecturesGratuites:5,   // lectures automatiques offertes dans la version gratuite
   // Synchronisation téléphone + ordinateur (Supabase) : adresse du projet et clé publique "anon"/"publishable"
   supabaseUrl:"",
-  supabaseCle:"",        // les clés offertes (2 à vie, 10 d'essai) sont enregistrées dans Supabase (table licences)
+  supabaseCle:"",
 };
 const LSK="mon-intermittence-licence";
 function licence(){try{return JSON.parse(localStorage.getItem(LSK)||"null")}catch(e){return null}}
-// Une clé offerte ne s'active que sur UN appareil (vérifié par le serveur). Les autres appareils de la
-// même personne obtiennent la version complète par la synchronisation (S.licence voyage, chiffrée, avec les données).
-const APK="mon-intermittence-appareil";
-function appareilId(){let a=localStorage.getItem(APK);if(!a){a=[...crypto.getRandomValues(new Uint8Array(16))].map(x=>x.toString(16).padStart(2,"0")).join("");localStorage.setItem(APK,a)}return a}
-function licenceActive(){const l=licence();if(l&&l.ok)return l;if(typeof SY!=="undefined"&&SY&&S.licence&&S.licence.h)return {...S.licence,ok:true,viaSync:true};return null}
-function isPro(){const l=licenceActive();if(!l)return false;if(l.fin&&iso(today())>l.fin)return false;return true}
-function finEssai(){const l=licenceActive();return l&&l.fin&&isPro()?l.fin:null}
-function essaiTermine(){const l=licenceActive();return l&&l.fin&&iso(today())>l.fin?l.fin:null}
-function attacherLicence(){const l=licence();if(l&&l.ok&&l.h&&(!S.licence||S.licence.h!==l.h||S.licence.fin!==l.fin))S.licence={h:l.h,appareil:l.appareil,fin:l.fin||null}}
-async function verifierLicence(force){const l=licenceActive();if(!l||!l.h||!syDispo()||!navigator.onLine)return;
-  const k="mon-intermittence-verif";if(!force&&localStorage.getItem(k)===iso(today()))return;
-  try{const r=await rpc("verifier_licence",{p_h:l.h,p_appareil:l.appareil});if(!r)return;localStorage.setItem(k,iso(today()));
-    if(r.ok||r.raison==="expiree"){const fin=r.fin||null;if(fin!==(l.fin||null)){if(l.viaSync){S.licence={...S.licence,fin};lsSet()}else localStorage.setItem(LSK,JSON.stringify({...licence(),fin}))}}
-    else{localStorage.removeItem(LSK);if(S.licence&&S.licence.h===l.h){delete S.licence;save()}}
-    renderAll()}catch(e){}}
-async function hashCle(k){const b=await crypto.subtle.digest("SHA-256",new TextEncoder().encode("mi-licence:"+String(k).toUpperCase().replace(/[^A-Z0-9]/g,"")));return [...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,"0")).join("")}
+// Clés de licence Polar : 3 appareils maximum par clé (le client libère un appareil depuis son espace Polar).
+const POLAR_API="https://api.polar.sh/v1/customer-portal/license-keys/";
+const estLocal=()=>["localhost","127.0.0.1"].includes(location.hostname);
+function isPro(){const l=licence();if(!l||!l.ok)return false;if(l.test&&!estLocal())return false;if(l.expire&&new Date(l.expire)<new Date())return false;return true}
+const expireLe=j=>j&&(j.expires_at!==undefined?j.expires_at:(j.license_key&&j.license_key.expires_at))||null;
+function nomAppareil(){const u=navigator.userAgent;const t=/iphone/i.test(u)?"iPhone":/ipad/i.test(u)?"iPad":/android/i.test(u)?"Android":/mac/i.test(u)?"Mac":/windows/i.test(u)?"Windows":/linux/i.test(u)?"Linux":"Appareil";
+  return `${t} · ${new Date().toLocaleDateString("fr-FR")}`}
+async function polar(action,body){const r=await fetch(POLAR_API+action,{method:"POST",headers:{"Content-Type":"application/json","Accept":"application/json"},body:JSON.stringify({...body,organization_id:CONFIG.polarOrgId}),cache:"no-store"});
+  let j=null;try{j=await r.json()}catch(e){}return {status:r.status,j}}
+// Revérification au plus une fois par semaine, seulement en ligne. Erreur réseau ou serveur : on garde la licence.
+async function verifierLicence(force){const l=licence();if(!l||!l.ok||!l.activation_id||!navigator.onLine)return;
+  if(l.expire&&new Date(l.expire)<new Date())force=true; // expirée en local : on redemande à Polar (renouvellement possible)
+  if(!force&&l.verif&&(Date.now()-new Date(l.verif).getTime())<7*864e5)return;
+  let r;try{r=await polar("validate",{key:l.key,activation_id:l.activation_id})}catch(e){return}
+  if(r.status===200&&r.j&&(r.j.status===undefined||r.j.status==="granted")){localStorage.setItem(LSK,JSON.stringify({...l,expire:expireLe(r.j),verif:new Date().toISOString()}));renderAll();return}
+  if(r.status===404||(r.status===200&&r.j&&r.j.status&&r.j.status!=="granted")){localStorage.removeItem(LSK);localStorage.setItem(LSK+"-retiree",JSON.stringify({date:iso(today())}));renderAll()}}
 const PRO_SECTIONS={employeurs:"Mes employeurs",conges:"Mes congés spectacles",mois:"Mon argent mois par mois",simu:"Et si…"};
-function openPay(raison){const m=$("payMod");const restant=Math.max(0,CONFIG.lecturesGratuites-(S.lectures||0));
+function openPay(raison,opts){opts=opts||{};const m=$("payMod");const restant=Math.max(0,CONFIG.lecturesGratuites-(S.lectures||0));
   m.querySelector(".card").innerHTML=`<div class="split"><h2>⭐ Version complète</h2><button class="link" onclick="$('payMod').classList.remove('on')">Fermer</button></div>
   ${raison?`<p class="small" style="margin-top:4px">${esc(raison)}</p>`:""}
-  ${essaiTermine()?`<p class="note" style="margin:8px 0">Ta période d'essai de la version complète s'est terminée le ${fd(D(essaiTermine()))}. Tes données sont toujours là : pour continuer avec la version complète, il suffit de l'acheter.</p>`:""}
+  ${!opts.merci&&!isPro()&&(localStorage.getItem(LSK+"-retiree")||(licence()&&licence().expire))?`<p class="note" style="margin:8px 0">La version complète n'est plus active sur cet appareil : ta période d'un an est terminée, ta clé a été désactivée, ou cet appareil a été libéré depuis ton espace Polar. Tes données sont toujours là.</p>`:""}
   <ul style="line-height:1.8;padding-left:20px;margin:10px 0">
     <li>Lecture automatique de toutes tes AEM et documents France Travail (version gratuite : ${CONFIG.lecturesGratuites}, il t'en reste ${restant})</li>
     <li>Mes employeurs : heures, salaires et taux horaire par employeur</li>
     <li>Mes congés spectacles : indemnité Audiens estimée et rappel avant le 31 mars</li>
     <li>Mon argent mois par mois et le simulateur « Et si… »</li>
-    <li>La synchronisation entre ton téléphone et ton ordinateur, chiffrée</li>
+    ${syDispo()?"<li>La synchronisation entre ton téléphone et ton ordinateur, chiffrée</li>":""}
     <li>Les mises à jour des barèmes chaque année</li></ul>
-  <div class="num" style="font-size:28px;font-weight:600;margin:6px 0">${CONFIG.prix} <span class="small">une seule fois, à vie</span></div>
-  <div class="actions">${CONFIG.lienAchat?`<a class="b red" href="${esc(CONFIG.lienAchat)}" target="_blank" rel="noopener" style="text-decoration:none">Acheter la version complète</a>`:`<span class="b ghost" style="cursor:default">Achat bientôt disponible</span>`}</div>
+  <div class="num" style="font-size:28px;font-weight:600;margin:6px 0">${CONFIG.prix} <span class="small">${CONFIG.duree}</span></div>
+  <div class="actions">${CONFIG.ventesOuvertes&&CONFIG.lienAchat?`<a class="b red" href="${esc(CONFIG.lienAchat)}" target="_blank" rel="noopener" style="text-decoration:none">Acheter la version complète</a>`:`<span class="b ghost" style="cursor:default">Version complète bientôt disponible</span>`}</div>
+  ${opts.merci?`<p class="note" id="merciNote" style="margin:18px 0 8px;background:#E3F1E6">🎉 <b>Merci !</b> Ta clé de licence t'a été envoyée par e-mail (expéditeur Polar). Colle-la ici pour débloquer la version complète.</p>`:""}
   <h3 style="margin-top:18px">J'ai déjà une clé</h3>
-  <p class="small" style="margin:0 0 8px">Une clé s'active sur <b>un seul appareil</b>. Pour tes autres appareils, utilise la synchronisation (Plus › Réglages).${/iphone|ipad|ipod/i.test(navigator.userAgent)&&!estInstallee()?" <b>Sur iPhone : installe d'abord l'appli sur l'écran d'accueil (📲 Installer), puis active ta clé depuis l'appli installée.</b>":""}</p>
+  <p class="small" style="margin:0 0 8px">Ta clé (elle commence par <b>MI-</b>) est dans l'e-mail envoyé par Polar après l'achat. Elle fonctionne sur <b>3 appareils</b> maximum.${/iphone|ipad|ipod/i.test(navigator.userAgent)&&!estInstallee()?" <b>Sur iPhone : installe d'abord l'appli sur l'écran d'accueil (📲 Installer), puis active ta clé depuis l'appli installée.</b>":""}</p>
   <div style="display:flex;gap:8px;flex-wrap:wrap"><input id="licKey" placeholder="Colle ta clé ici" style="flex:1;min-width:200px;border:1px solid var(--line);border-radius:8px;padding:10px;font:14px 'JetBrains Mono',monospace"><button class="b" id="licGo">Activer</button></div>
   <div class="small" id="licMsg" style="margin-top:8px"></div>`;
-  m.classList.add("on");$("licGo").onclick=()=>activer($("licKey").value.trim())}
-async function activer(key){const msg=$("licMsg");if(!key){msg.textContent="Colle d'abord ta clé.";return}
+  m.classList.add("on");$("licGo").onclick=()=>activer($("licKey").value.trim());
+  if(opts.merci){const k=$("licKey");$("merciNote").scrollIntoView({block:"start"});k.focus({preventScroll:true})}}
+async function activer(key){const msg=$("licMsg");key=String(key||"").trim();if(!key){msg.textContent="Colle d'abord ta clé.";return}
+  const ok=t=>{msg.innerHTML=`<span class="ok">✅ ${t}</span>`;localStorage.removeItem(LSK+"-retiree");renderAll()};
+  if(key.toUpperCase()===CONFIG.cleTest){if(estLocal()){localStorage.setItem(LSK,JSON.stringify({ok:true,key,test:true,date:iso(today())}));ok("Version complète activée (clé de test, en local).")}else msg.innerHTML='<span class="bad">Cette clé de test n\'est plus valable. Utilise la clé reçue par e-mail après l\'achat.</span>';return}
+  const l=licence();if(l&&l.ok&&l.key===key&&l.activation_id&&isPro()){ok("Cette clé est déjà activée sur cet appareil.");return}
+  if(!navigator.onLine){msg.innerHTML='<span class="bad">Pas de connexion internet : réessaie quand tu es connecté.</span>';return}
   msg.textContent="Vérification…";
-  const h=await hashCle(key);
-  if(syDispo()){let r;try{r=await rpc("activer_licence",{p_h:h,p_appareil:appareilId()})}catch(e){msg.innerHTML='<span class="bad">Pas de connexion internet : réessaie quand tu es connecté.</span>';return}
-    if(r&&r.ok){localStorage.setItem(LSK,JSON.stringify({ok:true,h,appareil:appareilId(),fin:r.fin||null,date:iso(today())}));attacherLicence();save();
-      msg.innerHTML=`<span class="ok">✅ Version complète activée sur cet appareil${r.fin?` jusqu'au ${fd(D(r.fin))}`:""}.</span>`;renderAll();return}
-    if(r&&r.raison==="deja_utilisee"){msg.innerHTML='<span class="bad">Cette clé a déjà été activée sur un autre appareil : une clé ne s\'active qu\'une seule fois.</span><br>Pour avoir la version complète sur ton deuxième appareil, relie-le avec la synchronisation (Plus › Réglages › Synchronisation). Tu as changé d\'appareil ? Contacte Altéa RH.';return}
-    if(r&&r.raison==="expiree"){msg.innerHTML=`<span class="bad">Cette clé d'essai a pris fin le ${fd(D(r.fin))}.</span>`;return}}
-  else if(!CONFIG.produitId){msg.innerHTML='<span class="bad">L\'activation des clés sera disponible très bientôt.</span>';return}
-  if(!CONFIG.produitId){msg.innerHTML='<span class="bad">Clé non reconnue. Vérifie-la (les tirets et les majuscules ne comptent pas).</span>';return}
-  try{const r=await fetch("https://api.lemonsqueezy.com/v1/licenses/activate",{method:"POST",headers:{"Accept":"application/json","Content-Type":"application/x-www-form-urlencoded"},body:new URLSearchParams({license_key:key,instance_name:"appareil-"+Math.random().toString(36).slice(2,8)})});
-    const j=await r.json();
-    if(j.activated&&(!CONFIG.produitId||String(j.meta&&j.meta.product_id)===String(CONFIG.produitId))){localStorage.setItem(LSK,JSON.stringify({ok:true,key,instance:j.instance&&j.instance.id,date:iso(today())}));msg.innerHTML='<span class="ok">✅ Version complète activée. Merci !</span>';renderAll()}
-    else msg.innerHTML=`<span class="bad">${/limit/i.test(j.error||"")?"Cette clé a déjà été activée sur le nombre maximum d'appareils.":"Clé non reconnue. Vérifie-la dans le mail reçu après l'achat."}</span>`}
-  catch(e){msg.innerHTML='<span class="bad">Pas de connexion internet : réessaie quand tu es connecté.</span>'}}
+  let r;try{r=await polar("activate",{key,label:nomAppareil()})}catch(e){msg.innerHTML='<span class="bad">Impossible de joindre le service de vérification. Vérifie ta connexion internet et réessaie.</span>';return}
+  if(r.status>=200&&r.status<300&&r.j&&r.j.id){const exp=expireLe(r.j);localStorage.setItem(LSK,JSON.stringify({ok:true,key,activation_id:r.j.id,expire:exp,date:iso(today()),verif:new Date().toISOString()}));ok(`Version complète activée sur cet appareil${exp?` jusqu'au ${fd(new Date(exp))}`:""}. Merci !`);return}
+  const portail="Pour l'utiliser ici, libère un ancien appareil depuis ton <b>espace client Polar</b> (lien dans l'e-mail de Polar), puis réessaie.";
+  if(r.status===403){const d=JSON.stringify(r.j||"");msg.innerHTML=/limit/i.test(d)?`<span class="bad">Cette clé est déjà activée sur 3 appareils, le maximum.</span><br>${portail}`:`<span class="bad">Cette clé ne peut pas être activée : elle est déjà utilisée sur 3 appareils, ou elle a été désactivée (par exemple après un remboursement).</span><br>${portail} Besoin d'aide ? Réponds à l'e-mail de Polar.`;return}
+  if(r.status===404||r.status===422){msg.innerHTML='<span class="bad">Clé inconnue. Copie-la exactement depuis l\'e-mail de Polar : elle commence par MI-.</span>';return}
+  msg.innerHTML='<span class="bad">Le service de vérification ne répond pas pour l\'instant. Réessaie dans quelques minutes.</span>'}
 
 /* ============ LECTURE DES DOCUMENTS (sans IA, sur l'appareil) ============ */
 const SRC={conges:"un document Congés Spectacles",aem:"une AEM",bulletin:"un bulletin de paie",contrat:"un contrat",notification:"une notification France Travail",paiement:"une attestation mensuelle France Travail",autre:"un document"};
@@ -1099,7 +1101,7 @@ async function offer(filename,data){
 const LS="mon-intermittence-v1";
 function lsGet(){try{return JSON.parse(localStorage.getItem(LS)||"null")}catch(e){return null}}
 function lsSet(){try{localStorage.setItem(LS,JSON.stringify(S));return true}catch(e){return false}}
-function save(){attacherLicence();noterSuppressions();if(!lsSet())setBadge("⚠️ Sauvegarde impossible");syMarquer()}
+function save(){noterSuppressions();if(!lsSet())setBadge("⚠️ Sauvegarde impossible");syMarquer()}
 function setBadge(t){const b=$("saveBadge");if(b)b.textContent=t}
 function adopt(o){o=JSON.parse(JSON.stringify(o||{}));const v=VIDE();
   S={...v,...o,profil:{...v.profil,...(o.profil||{})},bareme:{...v.bareme,...(o.bareme||{})},contrats:o.contrats||[],areRecue:o.areRecue||{},documents:o.documents||[],conges:o.conges||{}}}
@@ -1139,7 +1141,7 @@ function fusion(a,b){const sup={...(b.supprimes||{}),...(a.supprimes||{})};
   const conges={...(b.conges||{})};for(const y in (a.conges||{}))conges[y]={...(conges[y]||{}),...a.conges[y]};
   return {...b,...a,supprimes:sup,contrats:parId(a.contrats,b.contrats),documents:parId(a.documents,b.documents),areRecue:{...(b.areRecue||{}),...(a.areRecue||{})},conges,lectures:Math.max(a.lectures||0,b.lectures||0)}}
 function syMarquer(){if(!SY)return;syRev++;SY.sale=true;sySave();clearTimeout(syTimer);syTimer=setTimeout(synchro,2000)}
-function syRecu(o){adopt(o);attacherLicence();syConnus=idsContrats(S);lsSet()}
+function syRecu(o){adopt(o);syConnus=idsContrats(S);lsSet()}
 async function synchro(){
   if(!syActif())return;if(syBusy){syEncore=true;return}
   if(!navigator.onLine){syMsg="Hors connexion : la synchronisation reprendra toute seule.";renderSync();return}
@@ -1173,15 +1175,15 @@ function syArreter(btn){if(!btn.dataset.ok){btn.dataset.ok=1;btn.textContent="Co
 function depuis(t){if(!t)return"jamais";const m=Math.round((Date.now()-t)/6e4);return m<1?"à l'instant":m<60?`il y a ${m} min`:m<1440?`il y a ${Math.round(m/60)} h`:fd(new Date(t))}
 function renderSync(){const el=$("syncCard");if(!el)return;
   let h=`<h2>☁️ Synchronisation téléphone + ordinateur</h2>`;
-  if(!syDispo()){el.innerHTML=h+`<p class="small" style="margin-top:0">Bientôt disponible : tu pourras retrouver tes données sur ton téléphone et ton ordinateur.</p>`;return}
+  el.style.display=syDispo()?"":"none";if(!syDispo())return;
   const rejoindre=`<h3 style="margin-top:16px">J'ai déjà un code (autre appareil)</h3>`;
-  if(SY&&!isPro()){el.innerHTML=h+`<p class="small" style="margin-top:0">Cet appareil est relié, mais la version complète n'est pas (ou plus) active. Active-la sur ton premier appareil, ou ici avec ta clé.</p><div class="toolbar"><button class="b" onclick="openPay()">⭐ Version complète</button><button class="b ghost" style="color:var(--red)" onclick="syArreter(this)">Arrêter la synchronisation sur cet appareil</button></div>`;return}
+  if(SY&&!isPro()){el.innerHTML=h+`<p class="small" style="margin-top:0">Cet appareil est relié, mais la version complète n'est pas (ou plus) active ici. Active ta clé sur cet appareil pour reprendre la synchronisation.</p><div class="toolbar"><button class="b" onclick="openPay()">⭐ Version complète</button><button class="b ghost" style="color:var(--red)" onclick="syArreter(this)">Arrêter la synchronisation sur cet appareil</button></div>`;return}
   if(!SY){el.innerHTML=h+(isPro()?`<p class="small" style="margin-top:0">Tes données sont chiffrées sur ton appareil avant de partir : ni Altéa RH ni l'hébergeur ne peuvent les lire. Un code de 20 caractères relie tes appareils.</p>
     <h3>C'est mon premier appareil</h3><button class="b" onclick="syDemarrer()">Activer la synchronisation</button>`:`<p class="small" style="margin-top:0">Retrouve les mêmes données sur ton téléphone et ton ordinateur, chiffrées : personne d'autre que toi ne peut les lire. Fait partie de la version complète.</p><button class="b" onclick="openPay('La synchronisation fait partie de la version complète.')">⭐ Version complète</button>
-    <p class="small">Tu as déjà la version complète sur ton autre appareil ? Saisis ici le code de synchronisation affiché dessus : la version complète suivra.</p>`)+`
+`)+(isPro()?`
     ${rejoindre}
     <div style="display:flex;gap:8px;flex-wrap:wrap"><input id="syCode" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="XXXX-XXXX-XXXX-XXXX-XXXX" style="flex:1;min-width:220px;border:1px solid var(--line);border-radius:8px;padding:10px;font:14px 'JetBrains Mono',monospace"><button class="b" onclick="syRejoindre($('syCode').value)">Relier cet appareil</button></div>
-    <div class="small bad" id="syErr" style="margin-top:8px"></div>`;return}
+    <div class="small bad" id="syErr" style="margin-top:8px"></div>`:"");return}
   const code=fmtCode(SY.code);
   el.innerHTML=h+`<p style="margin-top:0">${syMsg?`<span class="bad">${esc(syMsg)}</span>`:syBusy?"Synchronisation en cours…":`✅ Synchronisé ${depuis(SY.der)}.`}</p>
     <p class="small">Pour retrouver tes données sur un autre appareil : ouvre l'appli dessus, va dans <b>Plus › Réglages › Synchronisation</b> et saisis ce code. <b>Garde-le précieusement</b> (photo, note) : sans lui, impossible de relier un nouvel appareil.</p>
@@ -1212,7 +1214,8 @@ if("serviceWorker" in navigator&&location.protocol.startsWith("http"))navigator.
 
 (function init(){
   const l=lsGet();if(l)adopt(l);syConnus=idsContrats(S);
-  renderAll();synchro();verifierLicence();const h=location.hash.slice(1);if(h&&$("s-"+h))go(h);
+  renderAll();synchro();verifierLicence();
+  const q=new URLSearchParams(location.search);if(q.get("achat")==="ok"){history.replaceState(null,"",location.pathname+location.hash);openPay(null,{merci:true})}const h=location.hash.slice(1);if(h&&$("s-"+h))go(h);
 })();
 </script>
 </body>
