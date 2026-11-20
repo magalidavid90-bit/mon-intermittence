@@ -123,6 +123,12 @@ form.f{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap
 .chk{display:flex;gap:8px;align-items:center;font-size:13.5px}
 .modal{position:fixed;inset:0;background:rgba(20,20,22,.45);display:none;align-items:flex-start;justify-content:center;padding:6vh 16px;z-index:20;overflow:auto}
 .modal.on{display:flex}
+.flecheBas{position:fixed;left:50%;bottom:10px;transform:translateX(-50%);z-index:30;display:flex;flex-direction:column;align-items:center;font-size:34px;color:var(--brand);animation:rebond 1.1s ease-in-out infinite;pointer-events:none}
+.flecheBas span{font:600 12px Inter;background:var(--brand);color:#fff;border-radius:6px;padding:3px 8px;order:-1;margin-bottom:2px}
+@keyframes rebond{0%,100%{transform:translate(-50%,0)}50%{transform:translate(-50%,8px)}}
+@media (min-width:700px){.flecheBas{display:none}}
+@media (max-width:699px){.modal .card.avecFleche{padding-bottom:110px}}
+
 .etapes{margin-top:14px;display:flex;flex-direction:column;gap:10px}
 .etape{display:flex;gap:12px;align-items:flex-start;border:1px solid var(--line);border-radius:12px;padding:12px 14px;background:#fff}
 .etape .pastille{flex:0 0 30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font:700 15px Inter;background:var(--ink);color:#fff}
@@ -925,7 +931,7 @@ async function verifierLicence(force){const l=licence();if(!l||!l.ok||!l.activat
   if(r.status===200&&r.j&&(r.j.status===undefined||r.j.status==="granted")){localStorage.setItem(LSK,JSON.stringify({...l,expire:expireLe(r.j),verif:new Date().toISOString()}));renderAll();return}
   if(r.status===404||(r.status===200&&r.j&&r.j.status&&r.j.status!=="granted")){localStorage.removeItem(LSK);localStorage.setItem(LSK+"-retiree",JSON.stringify({date:iso(today())}));renderAll();openPay()}}
 const PRO_SECTIONS={employeurs:"Mes employeurs",conges:"Mes congés spectacles",mois:"Mon argent mois par mois",simu:"Et si…"};
-function openPay(raison,opts){opts=opts||{};installOuvert=false;const m=$("payMod");const restant=Math.max(0,CONFIG.lecturesGratuites-(S.lectures||0));
+function openPay(raison,opts){opts=opts||{};installOuvert=false;$("payMod").querySelector(".card").classList.remove("avecFleche");const m=$("payMod");const restant=Math.max(0,CONFIG.lecturesGratuites-(S.lectures||0));
   const ios=iosNonInstalle(),vente=CONFIG.ventesOuvertes&&CONFIG.lienAchat,actif=isPro(),l=licence();
   const retiree=!opts.merci&&!actif&&(localStorage.getItem(LSK+"-retiree")||(l&&l.expire));
   const portail=`<a href="${esc(CONFIG.portailClient)}" target="_blank" rel="noopener">ton espace client Polar</a>`;
@@ -1277,9 +1283,9 @@ function aideInstall(opts){opts=opts||{};const m=$("payMod");const ios=estIOS(),
       <button class="b ghost" style="margin-top:10px" onclick="navigator.clipboard&&navigator.clipboard.writeText(location.origin+location.pathname+'?installer').then(()=>this.textContent='Lien copié ✓ : colle-le dans Safari')">Copier le lien</button>
       <p class="small" style="margin:8px 0 0"><button class="link" onclick="aideInstall({accueil:true,force:true})">Je suis déjà dans Safari</button></p></div></div>`;
   else if(ios)corps=`<div class="etapes">
-      <div class="etape encours"><div class="pastille">1</div><div class="ecorps"><div class="etitre">Touche ${ICONE_PARTAGE} Partager</div><p class="small" style="margin:0">Le carré avec une flèche, en bas de Safari (ou en haut sur iPad).</p></div></div>
+      <div class="etape encours"><div class="pastille">1</div><div class="ecorps"><div class="etitre">Touche ${ICONE_PARTAGE} Partager</div><p class="small" style="margin:0">Le carré avec une flèche, <b>en bas de l'écran</b> (ou en haut sur iPad). Tu ne le vois pas ? Touche <b>⋯</b> puis <b>Partager</b>.</p></div></div>
       <div class="etape encours"><div class="pastille">2</div><div class="ecorps"><div class="etitre">Choisis « ➕ Sur l'écran d'accueil »</div><p class="small" style="margin:0">Fais défiler la liste vers le bas si tu ne le vois pas.</p></div></div>
-      <div class="etape encours"><div class="pastille">3</div><div class="ecorps"><div class="etitre">Touche « Ajouter »</div><p class="small" style="margin:0">L'icône Mon Intermittence apparaît sur ton écran d'accueil : ouvre-la.</p></div></div></div>`+suite;
+      <div class="etape encours"><div class="pastille">3</div><div class="ecorps"><div class="etitre">Touche « Ajouter »</div><p class="small" style="margin:0">L'icône Mon Intermittence apparaît sur ton écran d'accueil : ouvre-la.</p></div></div></div>`+suite+`<div class="flecheBas" aria-hidden="true">⬇︎<span>Partager est ici, en bas</span></div>`;
   else if(promptInstall)corps=`<p style="margin:6px 0 14px">Une icône sur ton écran d'accueil, en plein écran, qui marche même sans réseau.</p>
       <button class="b red gros" id="btnInstaller">📲 Installer l'appli</button>`+suite;
   else if(android)corps=`<div class="etapes">
@@ -1288,8 +1294,9 @@ function aideInstall(opts){opts=opts||{};const m=$("payMod");const ios=estIOS(),
   else corps=`<p style="margin:6px 0 10px">Sur ordinateur, avec <b>Chrome</b> ou <b>Edge</b> : clique sur l'icône d'installation <b>⊕</b> à droite de la barre d'adresse, puis sur <b>Installer</b>.</p>
       <p class="small" style="margin:0">Tu peux aussi simplement utiliser Mon Intermittence dans ton navigateur : ajoute la page à tes favoris.</p>`+suite;
   m.querySelector(".card").innerHTML=`<div class="split"><h2>📲 Installer Mon Intermittence</h2><button class="link" onclick="$('payMod').classList.remove('on')">Fermer</button></div>
-    <div style="display:flex;align-items:center;gap:12px;margin:8px 0 12px"><img src="icons/icon-192.png" alt="" width="56" height="56" style="border-radius:13px"><div><b>Mon Intermittence</b><br><span class="small">Le suivi des intermittents du spectacle · gratuit</span></div></div>${corps}`;
-  m.classList.add("on");
+    <div style="display:flex;align-items:center;gap:12px;margin:8px 0 12px"><img src="icons/icon-192.png" alt="" width="56" height="56" style="border-radius:13px"><div><b>Mon Intermittence</b><br><span class="small">Le suivi des intermittents du spectacle · gratuit</span></div></div>${corps}
+    ${estInstallee()?"":`<p style="text-align:center;margin:16px 0 0"><button class="link small" onclick="$('payMod').classList.remove('on')">Plus tard, continuer dans le navigateur</button></p>`}`;
+  m.querySelector(".card").classList.toggle("avecFleche",!!m.querySelector(".flecheBas"));m.classList.add("on");
   const bi=$("btnInstaller");if(bi)bi.onclick=()=>{if(!promptInstall)return;promptInstall.prompt();promptInstall.userChoice.then(c=>{promptInstall=null;renderHeader();if(c&&c.outcome==="accepted")m.querySelector(".card").innerHTML=`<div class="split"><h2>✅ C'est installé !</h2><button class="link" onclick="$('payMod').classList.remove('on')">Fermer</button></div><p>Retrouve <b>Mon Intermittence</b> sur ton écran d'accueil (ou dans tes applications).</p>${suite}`;else aideInstall({accueil:true})})}}
 window.addEventListener("appinstalled",()=>{promptInstall=null;renderHeader()});
 window.aideInstall=aideInstall;window.openPay=openPay;
@@ -1299,7 +1306,9 @@ if("serviceWorker" in navigator&&location.protocol.startsWith("http"))navigator.
   const l=lsGet();if(l)adopt(l);syConnus=idsContrats(S);
   renderAll();synchro();verifierLicence();
   const q=new URLSearchParams(location.search);
-  if(q.has("installer")){history.replaceState(null,"",location.pathname+location.hash);if(!estInstallee())aideInstall({accueil:true})}
+  const lienInstall=q.has("installer");if(lienInstall)history.replaceState(null,"",location.pathname+location.hash);
+  // L'installation est proposée en premier, à chaque nouvelle visite tant que l'appli n'est pas installée
+  if(!estInstallee()&&q.get("achat")!=="ok"&&(lienInstall||!sessionStorage.getItem("mi-install-vu"))){sessionStorage.setItem("mi-install-vu","1");aideInstall({accueil:true})}
   if(q.get("achat")==="ok"){history.replaceState(null,"",location.pathname+location.hash);openPay(null,{merci:true})}const h=location.hash.slice(1);if(h&&$("s-"+h))go(h);
 })();
 </script>
