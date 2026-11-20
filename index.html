@@ -106,10 +106,10 @@ tr:hover td{background:#FBFAF7}
 .pill{display:inline-block;padding:2px 9px;border-radius:999px;font-size:12px;font-weight:600}
 .p-h{background:var(--teal-soft);color:var(--teal)} .p-c{background:var(--amber-soft);color:#8A5A0E}
 .p-a{background:#ECEAF6;color:#4A3F8C} .p-x{background:#EEE;color:#555}
-button.b,label.b{display:inline-flex;align-items:center;gap:6px;background:var(--ink);color:#fff;border:0;border-radius:9px;padding:9px 14px;font:600 13.5px Inter;cursor:pointer}
-button.b.ghost,label.b.ghost{background:transparent;color:var(--ink);border:1px solid var(--line)}
-button.b.amber,button.b.red{background:var(--brand)}
-button.b.amber:hover,button.b.red:hover{background:var(--brand-dark)}
+button.b,label.b,a.b,span.b{display:inline-flex;align-items:center;gap:6px;background:var(--ink);color:#fff;border:0;border-radius:9px;padding:9px 14px;font:600 13.5px Inter;cursor:pointer}
+button.b.ghost,label.b.ghost,a.b.ghost,span.b.ghost{background:transparent;color:var(--ink);border:1px solid var(--line)}
+button.b.amber,button.b.red,a.b.red{background:var(--brand)}
+button.b.amber:hover,button.b.red:hover,a.b.red:hover{background:var(--brand-dark)}
 button.b.light{background:#fff;color:var(--ink)}
 button.link{background:none;border:0;color:var(--teal);cursor:pointer;font:600 13px Inter;padding:2px 4px}
 button.link.del{color:var(--red)}
@@ -873,8 +873,8 @@ const CONFIG={
   prix:"9,90 €",
   duree:"par an",        // affiché à côté du prix (abonnement annuel reconduit tacitement)
   ventesOuvertes:false,  // false = bouton d'achat caché (« Version complète bientôt disponible ») ; passer à true quand le SIRET est là
-  lienAchat:"https://buy.polar.sh/polar_cl_N5Oew4MaxWrsvXFmlQSD1WE38Dawus81LNIuz4ctLgd", // lien d'achat Polar
-  appareilsMax:2,        // appareils par clé (doit correspondre à la limite d'activation réglée dans Polar)
+  lienAchat:"https://buy.polar.sh/polar_cl_YVC3zPnMlFaDewjjSEF1Utj2iLHxrs8X57nLj2oCsYX", // lien d'achat Polar (abonnement annuel)
+  appareilsMax:1,        // appareils par clé (doit correspondre à la limite d'activation réglée dans Polar)
   polarOrgId:"d1d82a96-825d-4207-89f1-466c5eb5214e", // organisation Polar (activation et vérification des clés)
   cleTest:"ESSAI-2026",  // clé d'essai, acceptée uniquement en local (localhost / 127.0.0.1)
   lecturesGratuites:5,   // lectures automatiques offertes dans la version gratuite
@@ -899,12 +899,12 @@ async function verifierLicence(force){const l=licence();if(!l||!l.ok||!l.activat
   if(!force&&l.verif&&(Date.now()-new Date(l.verif).getTime())<7*864e5)return;
   let r;try{r=await polar("validate",{key:l.key,activation_id:l.activation_id})}catch(e){return}
   if(r.status===200&&r.j&&(r.j.status===undefined||r.j.status==="granted")){localStorage.setItem(LSK,JSON.stringify({...l,expire:expireLe(r.j),verif:new Date().toISOString()}));renderAll();return}
-  if(r.status===404||(r.status===200&&r.j&&r.j.status&&r.j.status!=="granted")){localStorage.removeItem(LSK);localStorage.setItem(LSK+"-retiree",JSON.stringify({date:iso(today())}));renderAll()}}
+  if(r.status===404||(r.status===200&&r.j&&r.j.status&&r.j.status!=="granted")){localStorage.removeItem(LSK);localStorage.setItem(LSK+"-retiree",JSON.stringify({date:iso(today())}));renderAll();openPay()}}
 const PRO_SECTIONS={employeurs:"Mes employeurs",conges:"Mes congés spectacles",mois:"Mon argent mois par mois",simu:"Et si…"};
 function openPay(raison,opts){opts=opts||{};const m=$("payMod");const restant=Math.max(0,CONFIG.lecturesGratuites-(S.lectures||0));
   m.querySelector(".card").innerHTML=`<div class="split"><h2>⭐ Version complète</h2><button class="link" onclick="$('payMod').classList.remove('on')">Fermer</button></div>
   ${raison?`<p class="small" style="margin-top:4px">${esc(raison)}</p>`:""}
-  ${!opts.merci&&!isPro()&&(localStorage.getItem(LSK+"-retiree")||(licence()&&licence().expire))?`<p class="note" style="margin:8px 0">La version complète n'est plus active sur cet appareil : ton abonnement est terminé, ta clé a été désactivée, ou cet appareil a été libéré depuis ton espace Polar. Tes données sont toujours là.</p>`:""}
+  ${!opts.merci&&!isPro()&&(localStorage.getItem(LSK+"-retiree")||(licence()&&licence().expire))?`<div class="note" style="margin:8px 0"><b>Ta version complète n'est plus active sur cet appareil.</b> Ton abonnement n'a pas été renouvelé (ou ta clé a été désactivée, ou cet appareil a été libéré depuis ton espace Polar). Tu es repassé·e en version gratuite ; tes données sont toujours là.${CONFIG.lienAchat?`<div style="margin-top:10px"><a class="b red" href="${esc(CONFIG.lienAchat)}" target="_blank" rel="noopener" style="text-decoration:none">Renouveler mon abonnement</a></div>`:""}</div>`:""}
   <ul style="line-height:1.8;padding-left:20px;margin:10px 0">
     <li>Lecture automatique de toutes tes AEM et documents France Travail (version gratuite : ${CONFIG.lecturesGratuites}, il t'en reste ${restant})</li>
     <li>Mes employeurs : heures, salaires et taux horaire par employeur</li>
@@ -913,11 +913,11 @@ function openPay(raison,opts){opts=opts||{};const m=$("payMod");const restant=Ma
     ${syDispo()?"<li>La synchronisation entre ton téléphone et ton ordinateur, chiffrée</li>":""}
     <li>Les mises à jour des barèmes chaque année</li></ul>
   <div class="num" style="font-size:28px;font-weight:600;margin:6px 0">${CONFIG.prix} <span class="small">${CONFIG.duree}</span></div>
-  <p class="small" style="margin:0 0 10px">Abonnement d'un an, renouvelé automatiquement chaque année au même prix sur la même carte. Pour ne pas le renouveler, résilie depuis ton espace client Polar au plus tard 15 jours avant la date anniversaire (<a href="cgv.html" target="_blank">conditions de vente</a>).</p>
+  <p class="small" style="margin:0 0 10px">Abonnement annuel de 9,90 €, renouvelé automatiquement chaque année, résiliable à tout moment depuis ton espace client Polar (<a href="cgv.html" target="_blank">conditions de vente</a>).</p>
   <div class="actions">${CONFIG.ventesOuvertes&&CONFIG.lienAchat?`<a class="b red" href="${esc(CONFIG.lienAchat)}" target="_blank" rel="noopener" style="text-decoration:none">Acheter la version complète</a>`:`<span class="b ghost" style="cursor:default">Version complète bientôt disponible</span>`}</div>
   ${opts.merci?`<p class="note" id="merciNote" style="margin:18px 0 8px;background:#E3F1E6">🎉 <b>Merci !</b> Ta clé de licence t'a été envoyée par e-mail (expéditeur Polar). Colle-la ici pour débloquer la version complète.</p>`:""}
   <h3 style="margin-top:18px">J'ai déjà une clé</h3>
-  <p class="small" style="margin:0 0 8px">Ta clé (elle commence par <b>MI-</b>) est dans l'e-mail envoyé par Polar après l'achat. Elle fonctionne sur <b>${CONFIG.appareilsMax} appareils</b> maximum (par exemple ton téléphone et ton ordinateur).${/iphone|ipad|ipod/i.test(navigator.userAgent)&&!estInstallee()?" <b>Sur iPhone : installe d'abord l'appli sur l'écran d'accueil (📲 Installer), puis active ta clé depuis l'appli installée.</b>":""}</p>
+  <p class="small" style="margin:0 0 8px">Ta clé (elle commence par <b>MI-</b>) est dans l'e-mail envoyé par Polar après l'achat. Elle fonctionne sur <b>${CONFIG.appareilsMax>1?CONFIG.appareilsMax+" appareils":"1 seul appareil"}</b> à la fois.${/iphone|ipad|ipod/i.test(navigator.userAgent)&&!estInstallee()?" <b>Sur iPhone : installe d'abord l'appli sur l'écran d'accueil (📲 Installer), puis active ta clé depuis l'appli installée.</b>":""}</p>
   <div style="display:flex;gap:8px;flex-wrap:wrap"><input id="licKey" placeholder="Colle ta clé ici" style="flex:1;min-width:200px;border:1px solid var(--line);border-radius:8px;padding:10px;font:14px 'JetBrains Mono',monospace"><button class="b" id="licGo">Activer</button></div>
   <div class="small" id="licMsg" style="margin-top:8px"></div>`;
   m.classList.add("on");$("licGo").onclick=()=>activer($("licKey").value.trim());
@@ -930,8 +930,7 @@ async function activer(key){const msg=$("licMsg");key=String(key||"").trim();if(
   msg.textContent="Vérification…";
   let r;try{r=await polar("activate",{key,label:nomAppareil()})}catch(e){msg.innerHTML='<span class="bad">Impossible de joindre le service de vérification. Vérifie ta connexion internet et réessaie.</span>';return}
   if(r.status>=200&&r.status<300&&r.j&&r.j.id){const exp=expireLe(r.j);localStorage.setItem(LSK,JSON.stringify({ok:true,key,activation_id:r.j.id,expire:exp,date:iso(today()),verif:new Date().toISOString()}));ok(`Version complète activée sur cet appareil${exp?` jusqu'au ${fd(new Date(exp))}`:""}. Merci !`);return}
-  const portail="Pour l'utiliser ici, libère un ancien appareil depuis ton <b>espace client Polar</b> (lien dans l'e-mail de Polar), puis réessaie.";
-  if(r.status===403){const d=JSON.stringify(r.j||"");msg.innerHTML=/limit/i.test(d)?`<span class="bad">Cette clé est déjà activée sur ${CONFIG.appareilsMax} appareils, le maximum.</span><br>${portail}`:`<span class="bad">Cette clé ne peut pas être activée : elle est déjà utilisée sur ${CONFIG.appareilsMax} appareils, ou elle a été désactivée (par exemple après un remboursement).</span><br>${portail} Besoin d'aide ? Réponds à l'e-mail de Polar.`;return}
+  if(r.status===403){const d=JSON.stringify(r.j||"");msg.innerHTML=/limit|activation/i.test(d)?`<span class="bad">Cette clé est déjà utilisée sur un autre appareil. Libère-le depuis ton espace client Polar pour l'activer ici.</span>`:`<span class="bad">Cette clé ne peut pas être activée : elle est déjà utilisée sur un autre appareil, ou ton abonnement n'est plus actif.</span><br>Libère l'autre appareil ou renouvelle ton abonnement depuis ton espace client Polar (lien dans l'e-mail de Polar).`;return}
   if(r.status===404||r.status===422){msg.innerHTML='<span class="bad">Clé inconnue. Copie-la exactement depuis l\'e-mail de Polar : elle commence par MI-.</span>';return}
   msg.innerHTML='<span class="bad">Le service de vérification ne répond pas pour l\'instant. Réessaie dans quelques minutes.</span>'}
 
