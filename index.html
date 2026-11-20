@@ -876,30 +876,25 @@ const CONFIG={
   lecturesGratuites:5,   // lectures automatiques offertes dans la version gratuite
   // Synchronisation téléphone + ordinateur (Supabase) : adresse du projet et clé publique "anon"/"publishable"
   supabaseUrl:"",
-  supabaseCle:"",
-  // Clés offertes (seules leurs empreintes sont ici ; les clés sont gardées par Altéa RH).
-  // fin : dernier jour de validité (null = à vie). Supprimer une ligne désactive la clé.
-  clesOffertes:[
-  {h:"83cf656f6cbc9b4193d1ce344b1fd67ab736d88fe2834dc2b2d54c84b7e71e26",fin:null}, // Pass à vie 1
-  {h:"db2d650eff4e1a224596e2725e049cd95e5658ed65ae18f0048b4311d96ea0a2",fin:null}, // Pass à vie 2
-  {h:"e0a35c713a1ad29098e4287c7dad575b161b38c9bb9ce3a2a0a4fc483fcde862",fin:"2027-11-30"}, // Testeur 1
-  {h:"852874d1a42b5de3930f9ca29bcdbe7a6315d72869544a896d49eca3d00d0aa5",fin:"2027-11-30"}, // Testeur 2
-  {h:"5adce55de499bd6cc058496ca72a44cfc943d900f718f0c89d6e90adf41ba749",fin:"2027-11-30"}, // Testeur 3
-  {h:"4e3cf126b2d11f09e804c686f76250bbf40e57775748fdde775b061219bbe00f",fin:"2027-11-30"}, // Testeur 4
-  {h:"505ca7f4281e20df509f82cd481386d0ad16c6d608844d141f9a531aa53fd97d",fin:"2027-11-30"}, // Testeur 5
-  {h:"d882d131426bc59d83577c7be03b359c8299b311feb40f8757bcdcf85f86a95a",fin:"2027-11-30"}, // Testeur 6
-  {h:"764e284250c8ba0a8df5ac2f18b02bce9cf7ab92f28858feb8ad0d1e2b95d7a9",fin:"2027-11-30"}, // Testeur 7
-  {h:"a376e21a8a3c9e35a77cf2a918ab9f214814cc1eae148b0b3e87e866ea201fd0",fin:"2027-11-30"}, // Testeur 8
-  {h:"5f65f6188d5b30484a7e586aab902da2af746d87401a707453acb60c09c0ded5",fin:"2027-11-30"}, // Testeur 9
-  {h:"b19e556f0727809891ed9ae615ceeca9fe438241d66e870eb99f4b675d432ac1",fin:"2027-11-30"}, // Testeur 10
-  ]
+  supabaseCle:"",        // les clés offertes (2 à vie, 10 d'essai) sont enregistrées dans Supabase (table licences)
 };
 const LSK="mon-intermittence-licence";
 function licence(){try{return JSON.parse(localStorage.getItem(LSK)||"null")}catch(e){return null}}
-function cleOfferte(h){return (CONFIG.clesOffertes||[]).find(c=>c.h===h)}
-function finEssai(){const l=licence();if(!l||!l.ok||!l.h)return null;const c=cleOfferte(l.h);return c?c.fin:null}
-function isPro(){const l=licence();if(!l||!l.ok)return false;if(l.h){const c=cleOfferte(l.h);if(!c)return false;if(c.fin&&iso(today())>c.fin)return false}return true}
-function essaiTermine(){const l=licence();if(!l||!l.ok||!l.h)return null;const c=cleOfferte(l.h);return c&&c.fin&&iso(today())>c.fin?c.fin:null}
+// Une clé offerte ne s'active que sur UN appareil (vérifié par le serveur). Les autres appareils de la
+// même personne obtiennent la version complète par la synchronisation (S.licence voyage, chiffrée, avec les données).
+const APK="mon-intermittence-appareil";
+function appareilId(){let a=localStorage.getItem(APK);if(!a){a=[...crypto.getRandomValues(new Uint8Array(16))].map(x=>x.toString(16).padStart(2,"0")).join("");localStorage.setItem(APK,a)}return a}
+function licenceActive(){const l=licence();if(l&&l.ok)return l;if(typeof SY!=="undefined"&&SY&&S.licence&&S.licence.h)return {...S.licence,ok:true,viaSync:true};return null}
+function isPro(){const l=licenceActive();if(!l)return false;if(l.fin&&iso(today())>l.fin)return false;return true}
+function finEssai(){const l=licenceActive();return l&&l.fin&&isPro()?l.fin:null}
+function essaiTermine(){const l=licenceActive();return l&&l.fin&&iso(today())>l.fin?l.fin:null}
+function attacherLicence(){const l=licence();if(l&&l.ok&&l.h&&(!S.licence||S.licence.h!==l.h||S.licence.fin!==l.fin))S.licence={h:l.h,appareil:l.appareil,fin:l.fin||null}}
+async function verifierLicence(force){const l=licenceActive();if(!l||!l.h||!syDispo()||!navigator.onLine)return;
+  const k="mon-intermittence-verif";if(!force&&localStorage.getItem(k)===iso(today()))return;
+  try{const r=await rpc("verifier_licence",{p_h:l.h,p_appareil:l.appareil});if(!r)return;localStorage.setItem(k,iso(today()));
+    if(r.ok||r.raison==="expiree"){const fin=r.fin||null;if(fin!==(l.fin||null)){if(l.viaSync){S.licence={...S.licence,fin};lsSet()}else localStorage.setItem(LSK,JSON.stringify({...licence(),fin}))}}
+    else{localStorage.removeItem(LSK);if(S.licence&&S.licence.h===l.h){delete S.licence;save()}}
+    renderAll()}catch(e){}}
 async function hashCle(k){const b=await crypto.subtle.digest("SHA-256",new TextEncoder().encode("mi-licence:"+String(k).toUpperCase().replace(/[^A-Z0-9]/g,"")));return [...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,"0")).join("")}
 const PRO_SECTIONS={employeurs:"Mes employeurs",conges:"Mes congés spectacles",mois:"Mon argent mois par mois",simu:"Et si…"};
 function openPay(raison){const m=$("payMod");const restant=Math.max(0,CONFIG.lecturesGratuites-(S.lectures||0));
@@ -916,14 +911,19 @@ function openPay(raison){const m=$("payMod");const restant=Math.max(0,CONFIG.lec
   <div class="num" style="font-size:28px;font-weight:600;margin:6px 0">${CONFIG.prix} <span class="small">une seule fois, à vie</span></div>
   <div class="actions">${CONFIG.lienAchat?`<a class="b red" href="${esc(CONFIG.lienAchat)}" target="_blank" rel="noopener" style="text-decoration:none">Acheter la version complète</a>`:`<span class="b ghost" style="cursor:default">Achat bientôt disponible</span>`}</div>
   <h3 style="margin-top:18px">J'ai déjà une clé</h3>
+  <p class="small" style="margin:0 0 8px">Une clé s'active sur <b>un seul appareil</b>. Pour tes autres appareils, utilise la synchronisation (Plus › Réglages).${/iphone|ipad|ipod/i.test(navigator.userAgent)&&!estInstallee()?" <b>Sur iPhone : installe d'abord l'appli sur l'écran d'accueil (📲 Installer), puis active ta clé depuis l'appli installée.</b>":""}</p>
   <div style="display:flex;gap:8px;flex-wrap:wrap"><input id="licKey" placeholder="Colle ta clé ici" style="flex:1;min-width:200px;border:1px solid var(--line);border-radius:8px;padding:10px;font:14px 'JetBrains Mono',monospace"><button class="b" id="licGo">Activer</button></div>
   <div class="small" id="licMsg" style="margin-top:8px"></div>`;
   m.classList.add("on");$("licGo").onclick=()=>activer($("licKey").value.trim())}
 async function activer(key){const msg=$("licMsg");if(!key){msg.textContent="Colle d'abord ta clé.";return}
   msg.textContent="Vérification…";
-  const h=await hashCle(key),off=cleOfferte(h);
-  if(off){if(off.fin&&iso(today())>off.fin){msg.innerHTML=`<span class="bad">Cette clé d'essai a pris fin le ${fd(D(off.fin))}.</span>`;return}
-    localStorage.setItem(LSK,JSON.stringify({ok:true,h,offerte:true,date:iso(today())}));msg.innerHTML=`<span class="ok">✅ Version complète activée${off.fin?` jusqu'au ${fd(D(off.fin))}`:""}.</span>`;renderAll();return}
+  const h=await hashCle(key);
+  if(syDispo()){let r;try{r=await rpc("activer_licence",{p_h:h,p_appareil:appareilId()})}catch(e){msg.innerHTML='<span class="bad">Pas de connexion internet : réessaie quand tu es connecté.</span>';return}
+    if(r&&r.ok){localStorage.setItem(LSK,JSON.stringify({ok:true,h,appareil:appareilId(),fin:r.fin||null,date:iso(today())}));attacherLicence();save();
+      msg.innerHTML=`<span class="ok">✅ Version complète activée sur cet appareil${r.fin?` jusqu'au ${fd(D(r.fin))}`:""}.</span>`;renderAll();return}
+    if(r&&r.raison==="deja_utilisee"){msg.innerHTML='<span class="bad">Cette clé a déjà été activée sur un autre appareil : une clé ne s\'active qu\'une seule fois.</span><br>Pour avoir la version complète sur ton deuxième appareil, relie-le avec la synchronisation (Plus › Réglages › Synchronisation). Tu as changé d\'appareil ? Contacte Altéa RH.';return}
+    if(r&&r.raison==="expiree"){msg.innerHTML=`<span class="bad">Cette clé d'essai a pris fin le ${fd(D(r.fin))}.</span>`;return}}
+  else if(!CONFIG.produitId){msg.innerHTML='<span class="bad">L\'activation des clés sera disponible très bientôt.</span>';return}
   if(!CONFIG.produitId){msg.innerHTML='<span class="bad">Clé non reconnue. Vérifie-la (les tirets et les majuscules ne comptent pas).</span>';return}
   try{const r=await fetch("https://api.lemonsqueezy.com/v1/licenses/activate",{method:"POST",headers:{"Accept":"application/json","Content-Type":"application/x-www-form-urlencoded"},body:new URLSearchParams({license_key:key,instance_name:"appareil-"+Math.random().toString(36).slice(2,8)})});
     const j=await r.json();
@@ -1099,7 +1099,7 @@ async function offer(filename,data){
 const LS="mon-intermittence-v1";
 function lsGet(){try{return JSON.parse(localStorage.getItem(LS)||"null")}catch(e){return null}}
 function lsSet(){try{localStorage.setItem(LS,JSON.stringify(S));return true}catch(e){return false}}
-function save(){noterSuppressions();if(!lsSet())setBadge("⚠️ Sauvegarde impossible");syMarquer()}
+function save(){attacherLicence();noterSuppressions();if(!lsSet())setBadge("⚠️ Sauvegarde impossible");syMarquer()}
 function setBadge(t){const b=$("saveBadge");if(b)b.textContent=t}
 function adopt(o){o=JSON.parse(JSON.stringify(o||{}));const v=VIDE();
   S={...v,...o,profil:{...v.profil,...(o.profil||{})},bareme:{...v.bareme,...(o.bareme||{})},contrats:o.contrats||[],areRecue:o.areRecue||{},documents:o.documents||[],conges:o.conges||{}}}
@@ -1139,7 +1139,7 @@ function fusion(a,b){const sup={...(b.supprimes||{}),...(a.supprimes||{})};
   const conges={...(b.conges||{})};for(const y in (a.conges||{}))conges[y]={...(conges[y]||{}),...a.conges[y]};
   return {...b,...a,supprimes:sup,contrats:parId(a.contrats,b.contrats),documents:parId(a.documents,b.documents),areRecue:{...(b.areRecue||{}),...(a.areRecue||{})},conges,lectures:Math.max(a.lectures||0,b.lectures||0)}}
 function syMarquer(){if(!SY)return;syRev++;SY.sale=true;sySave();clearTimeout(syTimer);syTimer=setTimeout(synchro,2000)}
-function syRecu(o){adopt(o);syConnus=idsContrats(S);lsSet()}
+function syRecu(o){adopt(o);attacherLicence();syConnus=idsContrats(S);lsSet()}
 async function synchro(){
   if(!syActif())return;if(syBusy){syEncore=true;return}
   if(!navigator.onLine){syMsg="Hors connexion : la synchronisation reprendra toute seule.";renderSync();return}
@@ -1174,10 +1174,12 @@ function depuis(t){if(!t)return"jamais";const m=Math.round((Date.now()-t)/6e4);r
 function renderSync(){const el=$("syncCard");if(!el)return;
   let h=`<h2>☁️ Synchronisation téléphone + ordinateur</h2>`;
   if(!syDispo()){el.innerHTML=h+`<p class="small" style="margin-top:0">Bientôt disponible : tu pourras retrouver tes données sur ton téléphone et ton ordinateur.</p>`;return}
-  if(!isPro()){el.innerHTML=h+`<p class="small" style="margin-top:0">Retrouve les mêmes données sur ton téléphone et ton ordinateur, chiffrées : personne d'autre que toi ne peut les lire.</p><button class="b" onclick="openPay('La synchronisation fait partie de la version complète.')">⭐ Version complète</button>`;return}
-  if(!SY){el.innerHTML=h+`<p class="small" style="margin-top:0">Tes données sont chiffrées sur ton appareil avant de partir : ni Altéa RH ni l'hébergeur ne peuvent les lire. Un code de 20 caractères relie tes appareils.</p>
-    <h3>C'est mon premier appareil</h3><button class="b" onclick="syDemarrer()">Activer la synchronisation</button>
-    <h3 style="margin-top:16px">J'ai déjà un code (autre appareil)</h3>
+  const rejoindre=`<h3 style="margin-top:16px">J'ai déjà un code (autre appareil)</h3>`;
+  if(SY&&!isPro()){el.innerHTML=h+`<p class="small" style="margin-top:0">Cet appareil est relié, mais la version complète n'est pas (ou plus) active. Active-la sur ton premier appareil, ou ici avec ta clé.</p><div class="toolbar"><button class="b" onclick="openPay()">⭐ Version complète</button><button class="b ghost" style="color:var(--red)" onclick="syArreter(this)">Arrêter la synchronisation sur cet appareil</button></div>`;return}
+  if(!SY){el.innerHTML=h+(isPro()?`<p class="small" style="margin-top:0">Tes données sont chiffrées sur ton appareil avant de partir : ni Altéa RH ni l'hébergeur ne peuvent les lire. Un code de 20 caractères relie tes appareils.</p>
+    <h3>C'est mon premier appareil</h3><button class="b" onclick="syDemarrer()">Activer la synchronisation</button>`:`<p class="small" style="margin-top:0">Retrouve les mêmes données sur ton téléphone et ton ordinateur, chiffrées : personne d'autre que toi ne peut les lire. Fait partie de la version complète.</p><button class="b" onclick="openPay('La synchronisation fait partie de la version complète.')">⭐ Version complète</button>
+    <p class="small">Tu as déjà la version complète sur ton autre appareil ? Saisis ici le code de synchronisation affiché dessus : la version complète suivra.</p>`)+`
+    ${rejoindre}
     <div style="display:flex;gap:8px;flex-wrap:wrap"><input id="syCode" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="XXXX-XXXX-XXXX-XXXX-XXXX" style="flex:1;min-width:220px;border:1px solid var(--line);border-radius:8px;padding:10px;font:14px 'JetBrains Mono',monospace"><button class="b" onclick="syRejoindre($('syCode').value)">Relier cet appareil</button></div>
     <div class="small bad" id="syErr" style="margin-top:8px"></div>`;return}
   const code=fmtCode(SY.code);
@@ -1189,7 +1191,7 @@ function renderSync(){const el=$("syncCard");if(!el)return;
     <button class="b ghost" onclick="synchro()">Synchroniser maintenant</button>
     <button class="b ghost" style="color:var(--red)" onclick="syArreter(this)">Arrêter la synchronisation sur cet appareil</button></div>`}
 window.syDemarrer=syDemarrer;window.syRejoindre=syRejoindre;window.syArreter=syArreter;window.synchro=synchro;
-document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible")synchro()});
+document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible"){synchro();verifierLicence()}});
 window.addEventListener("online",()=>synchro());
 setInterval(()=>{if(document.visibilityState==="visible")synchro()},60000);
 
@@ -1210,7 +1212,7 @@ if("serviceWorker" in navigator&&location.protocol.startsWith("http"))navigator.
 
 (function init(){
   const l=lsGet();if(l)adopt(l);syConnus=idsContrats(S);
-  renderAll();synchro();const h=location.hash.slice(1);if(h&&$("s-"+h))go(h);
+  renderAll();synchro();verifierLicence();const h=location.hash.slice(1);if(h&&$("s-"+h))go(h);
 })();
 </script>
 </body>

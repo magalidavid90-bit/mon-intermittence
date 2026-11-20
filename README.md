@@ -27,7 +27,12 @@ En haut de la section `CONFIGURATION DE LA VENTE` dans `index.html` :
 - `produitId` : identifiant du produit Lemon Squeezy (vérification des clés)
 - `lecturesGratuites` : nombre de lectures automatiques offertes
 - `supabaseUrl`, `supabaseCle` : projet Supabase pour la synchronisation (voir plus bas)
-- `clesOffertes` : clés gratuites (2 à vie, 10 d'essai jusqu'au 30/11/2027). Seules les empreintes des clés sont dans le code ; les clés elles-mêmes sont gardées par Altéa RH. Supprimer une ligne désactive la clé ; changer `fin` change la date de fin.
+
+## Clés offertes (2 à vie, 10 d'essai jusqu'au 30/11/2027)
+
+- Enregistrées dans Supabase (table `licences`, créée par `supabase.sql`) : seule l'empreinte de chaque clé y figure, les clés elles-mêmes sont gardées par Altéa RH.
+- **Une clé ne s'active que sur un seul appareil.** Les autres appareils de la même personne obtiennent la version complète en se reliant par la synchronisation.
+- Supabase > Table Editor > `licences` : vider la case `appareil` libère une clé (changement de téléphone) ; modifier `fin` prolonge ou arrête un essai (vide = à vie) ; supprimer la ligne désactive la clé (l'appareil la perd au plus tard le lendemain).
 
 ## À mettre à jour chaque année
 
