@@ -24,6 +24,7 @@ Outil de suivi pour les intermittents du spectacle (annexes 8 et 10) : compteur 
 
 En haut de la section `CONFIGURATION DE LA VENTE` dans `index.html` :
 
+- `modeTest`, `lienTest` : phase de test. Tant que `modeTest` est `true`, le bouton d'achat de l'appli mène au lien Polar gratuit des testeurs (0 €, sans carte) : les testeurs font le vrai parcours d'achat. **Passer `modeTest` à `false` à l'ouverture des ventes.**
 - `ventesOuvertes` : `false` tant que la vente n'est pas ouverte (le bouton d'achat est remplacé par « Version complète bientôt disponible » ; la saisie d'une clé reste possible). Passer à `true` pour vendre.
 - `prix`, `duree` : prix et durée affichés (« 9,90 € par an »)
 - `lienAchat` : lien d'achat Polar

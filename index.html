@@ -891,6 +891,8 @@ $("impJson").onchange=async e=>{const f=e.target.files[0];if(!f)return;try{const
 const CONFIG={
   prix:"9,90 €",
   duree:"par an",        // affiché à côté du prix (abonnement annuel reconduit tacitement)
+  modeTest:true,         // phase de test : le bouton d'achat mène au lien Polar gratuit (lienTest) ; passer à false à l'ouverture des ventes
+  lienTest:"https://buy.polar.sh/polar_cl_oxi1GK3jGnUF73Iyrbp90QMtLQyfsV0FMjtMb2etqPE", // lien Polar gratuit des testeurs (0 €, sans carte)
   ventesOuvertes:false,  // false = bouton d'achat caché (« Version complète bientôt disponible ») ; passer à true quand le SIRET est là
   lienAchat:"https://buy.polar.sh/polar_cl_YVC3zPnMlFaDewjjSEF1Utj2iLHxrs8X57nLj2oCsYX", // lien d'achat Polar (abonnement annuel)
   appareilsMax:1,        // appareils par clé (doit correspondre à la limite d'activation réglée dans Polar)
@@ -953,7 +955,7 @@ function bienvenueCle(k){garderCle(k);
     if(navigator.clipboard)navigator.clipboard.writeText(k).then(fini,fini);else fini()}}
 window.bienvenueCle=bienvenueCle;
 function openPay(raison,opts){opts=opts||{};installOuvert=false;$("payMod").querySelector(".card").classList.remove("avecFleche");const m=$("payMod");const restant=Math.max(0,CONFIG.lecturesGratuites-(S.lectures||0));
-  const ios=iosNonInstalle(),vente=CONFIG.ventesOuvertes&&CONFIG.lienAchat,actif=isPro(),l=licence();
+  const ios=iosNonInstalle(),test=!!(CONFIG.modeTest&&CONFIG.lienTest),lienActif=test?CONFIG.lienTest:(CONFIG.ventesOuvertes&&CONFIG.lienAchat?CONFIG.lienAchat:""),vente=!!lienActif,actif=isPro(),l=licence();
   const retiree=!opts.merci&&!actif&&(localStorage.getItem(LSK+"-retiree")||(l&&l.expire));
   const portail=`<a href="${esc(CONFIG.portailClient)}" target="_blank" rel="noopener">ton espace client Polar</a>`;
   const inclus=`<details class="inclus"${opts.merci||retiree?"":" open"}><summary>Ce qui est inclus</summary><ul>
@@ -972,7 +974,7 @@ function openPay(raison,opts){opts=opts||{};installOuvert=false;$("payMod").quer
       <p class="small" style="margin:8px 0 0">Le bouton Partager est en bas de Safari. Ouvre ensuite <b>Mon Intermittence</b> depuis ton écran d'accueil : la suite se fait dans l'appli.</p>
       <p class="small" style="margin:6px 0 0;color:var(--muted)">Pourquoi ? Sur iPhone, Safari et l'appli installée ne partagent pas leurs données : ta clé doit être activée dans l'appli.</p></div>`);
   const eAchat=etape(ios?2:1,opts.merci?"fait":(ios?"plustard":"encours"),opts.merci?"Paiement reçu, merci ! 🎉":"Choisis la version complète",
-      prix+`<div class="actions" style="margin-top:10px">${vente?`<a class="b red gros" href="${esc(CONFIG.lienAchat)}" target="_blank" rel="noopener" onclick="localStorage.setItem('mi-achat-en-cours',Date.now())">Acheter · ${CONFIG.prix} ${CONFIG.duree}</a>`:`<span class="b ghost" style="cursor:default">Version complète bientôt disponible</span>`}</div>`);
+      prix+`<div class="actions" style="margin-top:10px">${test?`<p class="note" style="margin:0 0 10px;background:#EEF3FB">🧪 <b>Phase de test :</b> la version complète t'est offerte (0 €, aucune carte bancaire). Tu fais exactement le parcours d'un vrai achat.</p>`:""}${vente?`<a class="b red gros" href="${esc(lienActif)}" target="_blank" rel="noopener" onclick="localStorage.setItem('mi-achat-en-cours',Date.now())">${test?"Obtenir ma version complète · offerte":`Acheter · ${CONFIG.prix} ${CONFIG.duree}`}</a>`:`<span class="b ghost" style="cursor:default">Version complète bientôt disponible</span>`}</div>`);
   const eCle=etape(ios?3:2,ios?"plustard":"encours","Colle ta clé",`
       <p class="small" style="margin:0 0 10px">Ouvre l'e-mail de <b>Polar</b> reçu après le paiement et <b>copie ta clé</b> (elle commence par <b>MI-</b> ; appui long dessus → <b>Copier</b>). Puis :</p>
       <button class="b red gros" id="licColler" type="button">📋 Coller ma clé</button>
@@ -984,7 +986,7 @@ function openPay(raison,opts){opts=opts||{};installOuvert=false;$("payMod").quer
   else{corps=(retiree?`<div class="note" style="margin:8px 0"><b>Ta version complète n'est plus active sur cet appareil.</b> Ton abonnement n'a pas été renouvelé (ou ta clé a été désactivée, ou cet appareil a été libéré depuis ton espace Polar). Tu es repassé·e en version gratuite ; tes données sont toujours là.${CONFIG.lienAchat?`<div style="margin-top:10px"><a class="b red" href="${esc(CONFIG.lienAchat)}" target="_blank" rel="noopener">Renouveler mon abonnement</a></div>`:""}</div>`:"")
     +(opts.bienvenue?`<p class="note" id="merciNote" style="margin:10px 0;background:#E3F1E6">🎁 <b>Bienvenue !</b> Ta clé est prête : activation de ta version complète…</p>`:"")
     +(opts.retourAchat&&!opts.merci?`<p class="note" id="merciNote" style="margin:10px 0;background:#E3F1E6">💳 <b>Tu viens de payer ?</b> Ouvre l'e-mail de Polar, copie ta clé, puis reviens toucher <b>📋 Coller ma clé</b>.</p>`:"")
-    +(opts.merci?`<p class="note" id="merciNote" style="margin:10px 0;background:#E3F1E6">🎉 <b>Merci !</b> Ta clé de licence t'a été envoyée par e-mail (expéditeur Polar). ${ios?"Sur iPhone, suis d'abord les étapes ci-dessous : installe l'appli, puis colle ta clé dedans.":"Il ne reste plus qu'à la coller ci-dessous."}</p>`:"")
+    +(opts.merci?`<p class="note" id="merciNote" style="margin:10px 0;background:#E3F1E6">🎉 <b>Merci !</b> Ta clé de licence t'a été envoyée par e-mail (expéditeur Polar). ${ios?"Tu as déjà l'appli sur ton écran d'accueil ? Ouvre-la et touche <b>📋 Coller ma clé</b>. Sinon, suis les étapes ci-dessous : installe l'appli, puis colle ta clé dedans.":"Il ne reste plus qu'à la coller ci-dessous."}</p>`:"")
     +`<div class="etapes">${ios?eInstall+eAchat+eCle:eAchat+eCle}</div>`
     +(ios||opts.merci?"":inclus)
     +(!ios&&!estInstallee()&&promptInstall?`<p class="small" style="margin-top:12px">📲 Astuce : <button class="link" onclick="aideInstall()">installe l'appli</button> pour l'ouvrir d'un geste depuis ton écran d'accueil.</p>`:"")}
