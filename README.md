@@ -13,6 +13,7 @@ Outil de suivi pour les intermittents du spectacle (annexes 8 et 10) : compteur 
 |---|---|
 | `index.html` | L'application complète (HTML, CSS, JavaScript) |
 | `sw.js` | Fonctionnement hors ligne |
+| `installer/` | Lien à partager pour installer l'appli : https://magalidavid90-bit.github.io/mon-intermittence/installer/ |
 | `manifest.webmanifest`, `icons/` | Installation sur téléphone |
 | `vendor/` | pdf.js (lecture des PDF) |
 | `supabase.sql` | À coller une fois dans Supabase pour la synchronisation |

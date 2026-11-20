@@ -123,6 +123,19 @@ form.f{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap
 .chk{display:flex;gap:8px;align-items:center;font-size:13.5px}
 .modal{position:fixed;inset:0;background:rgba(20,20,22,.45);display:none;align-items:flex-start;justify-content:center;padding:6vh 16px;z-index:20;overflow:auto}
 .modal.on{display:flex}
+.etapes{margin-top:14px;display:flex;flex-direction:column;gap:10px}
+.etape{display:flex;gap:12px;align-items:flex-start;border:1px solid var(--line);border-radius:12px;padding:12px 14px;background:#fff}
+.etape .pastille{flex:0 0 30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font:700 15px Inter;background:var(--ink);color:#fff}
+.etape .ecorps{flex:1;min-width:0}.etape .etitre{font-weight:700;font-size:16px;margin:4px 0 8px}
+.etape.fait{background:#F2F8F3;border-color:#CFE6D4}.etape.fait .pastille{background:#2E7D4F}.etape.fait .etitre{margin:4px 0}
+.etape.plustard{opacity:.55}.etape.plustard .pastille{background:#9a958d}
+.etape.encours{border:2px solid var(--brand);box-shadow:0 2px 10px rgba(200,16,46,.08)}
+.b.gros{width:100%;justify-content:center;padding:14px 16px;font-size:16px;border-radius:11px;text-decoration:none}
+.clebox{display:flex;gap:8px;margin-top:10px}.clebox input{flex:1;min-width:0;border:1px solid var(--line);border-radius:8px;padding:10px;font:14px 'JetBrains Mono',monospace}
+.prixline .num{font-size:26px;font-weight:600}
+.gestes{display:flex;flex-wrap:wrap;align-items:center;gap:6px}.geste{display:inline-flex;align-items:center;gap:6px;background:#EEF3FB;color:#1F4E9E;border-radius:8px;padding:7px 10px;font-weight:600;font-size:14px}.gestes .fl{color:var(--muted)}
+details.inclus{margin-top:14px;border-top:1px solid var(--line);padding-top:10px}details.inclus summary{cursor:pointer;font-weight:600}details.inclus ul{line-height:1.7;padding-left:20px;margin:8px 0 0}
+
 .modal .card{max-width:720px;width:100%}
 .split{display:flex;justify-content:space-between;gap:10px;align-items:center}
 .formula{font:13px "JetBrains Mono",monospace;background:#F7F5F0;border-radius:8px;padding:10px 12px;white-space:pre-wrap;line-height:1.6}
@@ -912,29 +925,59 @@ async function verifierLicence(force){const l=licence();if(!l||!l.ok||!l.activat
   if(r.status===200&&r.j&&(r.j.status===undefined||r.j.status==="granted")){localStorage.setItem(LSK,JSON.stringify({...l,expire:expireLe(r.j),verif:new Date().toISOString()}));renderAll();return}
   if(r.status===404||(r.status===200&&r.j&&r.j.status&&r.j.status!=="granted")){localStorage.removeItem(LSK);localStorage.setItem(LSK+"-retiree",JSON.stringify({date:iso(today())}));renderAll();openPay()}}
 const PRO_SECTIONS={employeurs:"Mes employeurs",conges:"Mes congés spectacles",mois:"Mon argent mois par mois",simu:"Et si…"};
-function openPay(raison,opts){opts=opts||{};const m=$("payMod");const restant=Math.max(0,CONFIG.lecturesGratuites-(S.lectures||0));
-  m.querySelector(".card").innerHTML=`<div class="split"><h2>⭐ Version complète</h2><button class="link" onclick="$('payMod').classList.remove('on')">Fermer</button></div>
-  ${raison?`<p class="small" style="margin-top:4px">${esc(raison)}</p>`:""}
-  ${!opts.merci&&!isPro()&&(localStorage.getItem(LSK+"-retiree")||(licence()&&licence().expire))?`<div class="note" style="margin:8px 0"><b>Ta version complète n'est plus active sur cet appareil.</b> Ton abonnement n'a pas été renouvelé (ou ta clé a été désactivée, ou cet appareil a été libéré depuis ton espace Polar). Tu es repassé·e en version gratuite ; tes données sont toujours là.${CONFIG.lienAchat?`<div style="margin-top:10px"><a class="b red" href="${esc(CONFIG.lienAchat)}" target="_blank" rel="noopener" style="text-decoration:none">Renouveler mon abonnement</a></div>`:""}</div>`:""}
-  <ul style="line-height:1.8;padding-left:20px;margin:10px 0">
-    <li>Lecture automatique de toutes tes AEM et documents France Travail (version gratuite : ${CONFIG.lecturesGratuites}, il t'en reste ${restant})</li>
-    <li>Mes employeurs : heures, salaires et taux horaire par employeur</li>
+function openPay(raison,opts){opts=opts||{};installOuvert=false;const m=$("payMod");const restant=Math.max(0,CONFIG.lecturesGratuites-(S.lectures||0));
+  const ios=iosNonInstalle(),vente=CONFIG.ventesOuvertes&&CONFIG.lienAchat,actif=isPro(),l=licence();
+  const retiree=!opts.merci&&!actif&&(localStorage.getItem(LSK+"-retiree")||(l&&l.expire));
+  const portail=`<a href="${esc(CONFIG.portailClient)}" target="_blank" rel="noopener">ton espace client Polar</a>`;
+  const inclus=`<details class="inclus"${opts.merci||retiree?"":" open"}><summary>Ce qui est inclus</summary><ul>
+    <li>Lecture automatique de toutes tes AEM et documents France Travail <span class="small">(version gratuite : ${CONFIG.lecturesGratuites}, il t'en reste ${restant})</span></li>
+    <li>Mes employeurs : heures, salaires et taux horaire</li>
     <li>Mes congés spectacles : indemnité Audiens estimée et rappel avant le 31 mars</li>
     <li>Mon argent mois par mois et le simulateur « Et si… »</li>
     ${syDispo()?"<li>La synchronisation entre ton téléphone et ton ordinateur, chiffrée</li>":""}
-    <li>Les mises à jour des barèmes chaque année</li></ul>
-  <div class="num" style="font-size:28px;font-weight:600;margin:6px 0">${CONFIG.prix} <span class="small">${CONFIG.duree}</span></div>
-  <p class="small" style="margin:0 0 10px">Abonnement annuel de 9,90 €, renouvelé automatiquement chaque année, résiliable à tout moment depuis ton espace client Polar (<a href="cgv.html" target="_blank">conditions de vente</a>).</p>
-  <div class="actions">${CONFIG.ventesOuvertes&&CONFIG.lienAchat?`<a class="b red" href="${esc(CONFIG.lienAchat)}" target="_blank" rel="noopener" style="text-decoration:none">Acheter la version complète</a>`:`<span class="b ghost" style="cursor:default">Version complète bientôt disponible</span>`}</div>
-  ${opts.merci?`<p class="note" id="merciNote" style="margin:18px 0 8px;background:#E3F1E6">🎉 <b>Merci !</b> Ta clé de licence t'a été envoyée par e-mail (expéditeur Polar). ${iosNonInstalle()?"Sur iPhone, suis d'abord les étapes ci-dessous :":"Colle-la ici pour débloquer la version complète."}</p>`:""}
-  ${iosNonInstalle()?`<div id="iosInstall">${MSG_INSTALL_IOS}</div>`:""}
-  <h3 style="margin-top:18px">J'ai déjà une clé</h3>
-  <p class="small" style="margin:0 0 8px">Ta clé (elle commence par <b>MI-</b>) est dans l'e-mail envoyé par Polar après l'achat. Elle fonctionne sur <b>${CONFIG.appareilsMax>1?CONFIG.appareilsMax+" appareils":"1 seul appareil"}</b> à la fois.</p>
-  <div style="display:flex;gap:8px;flex-wrap:wrap"><input id="licKey" placeholder="Colle ta clé ici" style="flex:1;min-width:200px;border:1px solid var(--line);border-radius:8px;padding:10px;font:14px 'JetBrains Mono',monospace"><button class="b" id="licGo">Activer</button></div>
-  <div class="small" id="licMsg" style="margin-top:8px"></div>`;
-  m.classList.add("on");$("licGo").onclick=()=>activer($("licKey").value.trim());
-  const k=$("licKey"),attente=cleEnAttente();if(attente&&!k.value)k.value=attente;
-  if(opts.merci){$("merciNote").scrollIntoView({block:"start"});if(!iosNonInstalle())k.focus({preventScroll:true})}}
+    <li>Les mises à jour des barèmes chaque année</li></ul></details>`;
+  const prix=`<div class="prixline"><span class="num">${CONFIG.prix}</span> <span class="small">${CONFIG.duree}</span></div>
+    <p class="small" style="margin:2px 0 0">Abonnement annuel de 9,90 €, renouvelé automatiquement chaque année, résiliable à tout moment depuis ton espace client Polar (<a href="cgv.html" target="_blank">conditions</a>).</p>`;
+  const etape=(n,etat,titre,corps)=>`<div class="etape ${etat}"><div class="pastille">${etat==="fait"?"✓":n}</div><div class="ecorps"><div class="etitre">${titre}</div>${etat==="fait"?"":corps}</div></div>`;
+  // Étapes
+  const eInstall=etape(ios?1:"",estInstallee()?"fait":"encours","Installe l'appli sur ton iPhone",`<div id="iosInstall">
+      <div class="gestes"><span class="geste">${ICONE_PARTAGE} Partager</span><span class="fl">→</span><span class="geste">➕ Sur l'écran d'accueil</span><span class="fl">→</span><span class="geste">Ajouter</span></div>
+      <p class="small" style="margin:8px 0 0">Le bouton Partager est en bas de Safari. Ouvre ensuite <b>Mon Intermittence</b> depuis ton écran d'accueil : la suite se fait dans l'appli.</p>
+      <p class="small" style="margin:6px 0 0;color:var(--muted)">Pourquoi ? Sur iPhone, Safari et l'appli installée ne partagent pas leurs données : ta clé doit être activée dans l'appli.</p></div>`);
+  const eAchat=etape(ios?2:1,opts.merci?"fait":(ios?"plustard":"encours"),opts.merci?"Paiement reçu, merci ! 🎉":"Choisis la version complète",
+      prix+`<div class="actions" style="margin-top:10px">${vente?`<a class="b red gros" href="${esc(CONFIG.lienAchat)}" target="_blank" rel="noopener">Acheter · ${CONFIG.prix} ${CONFIG.duree}</a>`:`<span class="b ghost" style="cursor:default">Version complète bientôt disponible</span>`}</div>`);
+  const eCle=etape(ios?3:2,ios?"plustard":"encours","Colle ta clé",`
+      <p class="small" style="margin:0 0 10px">Ouvre l'e-mail de <b>Polar</b> reçu après le paiement et <b>copie ta clé</b> (elle commence par <b>MI-</b>). Puis :</p>
+      <button class="b red gros" id="licColler" type="button">📋 Coller ma clé</button>
+      <div class="clebox"><input id="licKey" placeholder="ou colle-la ici : MI-…" autocomplete="off" autocapitalize="characters" spellcheck="false"><button class="b" id="licGo">Activer</button></div>
+      <div class="small" id="licMsg" style="margin-top:8px"></div>
+      <p class="small" style="margin:10px 0 0;color:var(--muted)">E-mail introuvable ? Ta clé est aussi dans ${portail}. Elle fonctionne sur ${CONFIG.appareilsMax>1?CONFIG.appareilsMax+" appareils":"1 seul appareil"} à la fois.</p>`);
+  let corps;
+  if(actif){corps=`<div class="note" style="background:#E3F1E6;margin-top:10px"><b>✅ Ta version complète est active sur cet appareil${l&&l.expire?` jusqu'au ${fd(new Date(l.expire))}`:""}.</b><br><span class="small">Gérer ton abonnement ou changer d'appareil : ${portail}.</span></div>${inclus}`}
+  else{corps=(retiree?`<div class="note" style="margin:8px 0"><b>Ta version complète n'est plus active sur cet appareil.</b> Ton abonnement n'a pas été renouvelé (ou ta clé a été désactivée, ou cet appareil a été libéré depuis ton espace Polar). Tu es repassé·e en version gratuite ; tes données sont toujours là.${CONFIG.lienAchat?`<div style="margin-top:10px"><a class="b red" href="${esc(CONFIG.lienAchat)}" target="_blank" rel="noopener">Renouveler mon abonnement</a></div>`:""}</div>`:"")
+    +(opts.merci?`<p class="note" id="merciNote" style="margin:10px 0;background:#E3F1E6">🎉 <b>Merci !</b> Ta clé de licence t'a été envoyée par e-mail (expéditeur Polar). ${ios?"Sur iPhone, suis d'abord les étapes ci-dessous : installe l'appli, puis colle ta clé dedans.":"Il ne reste plus qu'à la coller ci-dessous."}</p>`:"")
+    +`<div class="etapes">${ios?eInstall+eAchat+eCle:eAchat+eCle}</div>`
+    +(ios||opts.merci?"":inclus)
+    +(!ios&&!estInstallee()&&promptInstall?`<p class="small" style="margin-top:12px">📲 Astuce : <button class="link" onclick="aideInstall()">installe l'appli</button> pour l'ouvrir d'un geste depuis ton écran d'accueil.</p>`:"")}
+  m.querySelector(".card").innerHTML=`<div class="split"><h2>⭐ Version complète</h2><button class="link" onclick="$('payMod').classList.remove('on')">Fermer</button></div>
+  ${raison?`<p class="small" style="margin-top:4px">${esc(raison)}</p>`:""}${corps}`;
+  m.classList.add("on");if(actif)return;
+  const k=$("licKey");if(!k)return;
+  $("licGo").onclick=()=>activer(k.value.trim());
+  k.addEventListener("keydown",e=>{if(e.key==="Enter")activer(k.value.trim())});
+  k.addEventListener("paste",()=>setTimeout(()=>{const v=extraireCle(k.value);if(v){k.value=v;activer(v)}},30));
+  $("licColler").onclick=collerCle;
+  const attente=cleEnAttente();if(attente&&!k.value)k.value=attente;
+  if(opts.merci){$("merciNote").scrollIntoView({block:"start"});if(!ios)k.focus({preventScroll:true})}}
+// Extrait une clé MI-… d'un texte copié (un e-mail entier, des espaces…)
+function extraireCle(t){t=String(t||"").trim();const m=t.match(/\bMI-[A-Za-z0-9-]{4,}/i);return m?m[0]:(t&&t.length<80&&!/\s/.test(t)?t:"")}
+async function collerCle(){const k=$("licKey"),msg=$("licMsg");
+  let t="";try{t=await navigator.clipboard.readText()}catch(e){}
+  const v=extraireCle(t);
+  if(!v){msg.innerHTML='<span class="bad">Je ne trouve pas de clé copiée.</span> Copie la clé dans l\'e-mail de Polar (appui long sur la clé, puis « Copier »), ou colle-la dans le champ ci-dessous.';k.focus();return}
+  k.value=v;activer(v)}
+window.collerCle=collerCle;
+const ICONE_PARTAGE=`<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px"><path d="M12 3v12M8 7l4-4 4 4"/><path d="M6 11H5a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-8a1 1 0 0 0-1-1h-1"/></svg>`;
 async function activer(key){const msg=$("licMsg");key=String(key||"").trim();if(!key){msg.textContent="Colle d'abord ta clé.";return}
   const ok=t=>{msg.innerHTML=`<span class="ok">✅ ${t}</span>`;localStorage.removeItem(LSK+"-retiree");renderAll()};
   if(key.toUpperCase()===CONFIG.cleTest){if(estLocal()){localStorage.setItem(LSK,JSON.stringify({ok:true,key,test:true,date:iso(today())}));ok("Version complète activée (clé de test, en local).")}else msg.innerHTML='<span class="bad">Cette clé de test n\'est plus valable. Utilise la clé reçue par e-mail après l\'achat.</span>';return}
@@ -1216,23 +1259,48 @@ setInterval(()=>{if(document.visibilityState==="visible")synchro()},60000);
 
 /* ============ APPLI INSTALLABLE ============ */
 let promptInstall=null;
-window.addEventListener("beforeinstallprompt",e=>{e.preventDefault();promptInstall=e;renderHeader()});
+window.addEventListener("beforeinstallprompt",e=>{e.preventDefault();promptInstall=e;renderHeader();if(installOuvert&&$("payMod").classList.contains("on")&&!$("btnInstaller"))aideInstall({accueil:true})});
 const estInstallee=()=>window.matchMedia("(display-mode: standalone)").matches||navigator.standalone===true;
-function aideInstall(){const ios=/iphone|ipad|ipod/i.test(navigator.userAgent);const m=$("payMod");
-  if(promptInstall){promptInstall.prompt();promptInstall.userChoice.finally(()=>{promptInstall=null;renderHeader()});return}
-  m.querySelector(".card").innerHTML=`<div class="split"><h2>📲 Installer l'appli</h2><button class="link" onclick="$('payMod').classList.remove('on')">Fermer</button></div>
-  <p class="small">Une icône sur ton écran d'accueil, en plein écran, qui marche même sans réseau.</p>
-  <h3>Sur iPhone (Safari)</h3><ol style="line-height:1.8;padding-left:20px;margin:6px 0"><li>Touche le bouton <b>Partager</b> (le carré avec une flèche vers le haut)</li><li>Choisis <b>Sur l'écran d'accueil</b></li><li>Touche <b>Ajouter</b></li></ol>
-  <h3>Sur Android (Chrome)</h3><ol style="line-height:1.8;padding-left:20px;margin:6px 0"><li>Touche les <b>3 points</b> en haut à droite</li><li>Choisis <b>Installer l'application</b> ou <b>Ajouter à l'écran d'accueil</b></li></ol>
-  ${ios?'<div class="note">Tu es sur iPhone : suis les étapes « iPhone » ci-dessus, depuis Safari.</div>':""}`;
-  m.classList.add("on")}
+// Écran d'installation (aussi ouvert par le lien à partager : …/mon-intermittence/installer/)
+let installOuvert=false;
+function navInApp(){const u=navigator.userAgent;return /FBAN|FBAV|Instagram|WhatsApp|Line\/|Snapchat|LinkedInApp|GSA\/|; wv\)/i.test(u)}
+function aideInstall(opts){opts=opts||{};const m=$("payMod");const ios=estIOS(),android=/android/i.test(navigator.userAgent);
+  if(promptInstall&&!opts.accueil){promptInstall.prompt();promptInstall.userChoice.finally(()=>{promptInstall=null;renderHeader()});return}
+  installOuvert=true;
+  const suite=`<p class="small" style="margin:14px 0 0;color:var(--muted)">Ensuite, dans l'appli, touche <b>⭐ Version complète</b> pour activer ta clé.</p>`;
+  let corps;
+  if(estInstallee())corps=`<div class="note" style="background:#E3F1E6">✅ <b>L'appli est installée</b> et ouverte. Tu peux commencer !</div>`;
+  else if(ios&&!opts.force&&(!/safari/i.test(navigator.userAgent)||navInApp()||/CriOS|FxiOS|EdgiOS/i.test(navigator.userAgent)))
+    corps=`<div class="etape encours"><div class="pastille">!</div><div class="ecorps"><div class="etitre">Ouvre ce lien dans Safari</div>
+      <p class="small" style="margin:0">Le lien s'est ouvert dans une autre appli (WhatsApp, Gmail, Chrome…). Pour installer Mon Intermittence sur iPhone, il faut <b>Safari</b> :</p>
+      <ol style="line-height:1.8;padding-left:20px;margin:8px 0 0"><li>Touche <b>⋯</b> ou <b>${ICONE_PARTAGE}</b> en bas ou en haut de l'écran</li><li>Choisis <b>Ouvrir dans Safari</b></li></ol>
+      <button class="b ghost" style="margin-top:10px" onclick="navigator.clipboard&&navigator.clipboard.writeText(location.origin+location.pathname+'?installer').then(()=>this.textContent='Lien copié ✓ : colle-le dans Safari')">Copier le lien</button>
+      <p class="small" style="margin:8px 0 0"><button class="link" onclick="aideInstall({accueil:true,force:true})">Je suis déjà dans Safari</button></p></div></div>`;
+  else if(ios)corps=`<div class="etapes">
+      <div class="etape encours"><div class="pastille">1</div><div class="ecorps"><div class="etitre">Touche ${ICONE_PARTAGE} Partager</div><p class="small" style="margin:0">Le carré avec une flèche, en bas de Safari (ou en haut sur iPad).</p></div></div>
+      <div class="etape encours"><div class="pastille">2</div><div class="ecorps"><div class="etitre">Choisis « ➕ Sur l'écran d'accueil »</div><p class="small" style="margin:0">Fais défiler la liste vers le bas si tu ne le vois pas.</p></div></div>
+      <div class="etape encours"><div class="pastille">3</div><div class="ecorps"><div class="etitre">Touche « Ajouter »</div><p class="small" style="margin:0">L'icône Mon Intermittence apparaît sur ton écran d'accueil : ouvre-la.</p></div></div></div>`+suite;
+  else if(promptInstall)corps=`<p style="margin:6px 0 14px">Une icône sur ton écran d'accueil, en plein écran, qui marche même sans réseau.</p>
+      <button class="b red gros" id="btnInstaller">📲 Installer l'appli</button>`+suite;
+  else if(android)corps=`<div class="etapes">
+      <div class="etape encours"><div class="pastille">1</div><div class="ecorps"><div class="etitre">Touche les 3 points ⋮</div><p class="small" style="margin:0">En haut à droite de Chrome.${navInApp()?" Si tu es dans WhatsApp ou Gmail, choisis d'abord <b>Ouvrir dans Chrome</b>.":""}</p></div></div>
+      <div class="etape encours"><div class="pastille">2</div><div class="ecorps"><div class="etitre">« Installer l'application »</div><p class="small" style="margin:0">ou « Ajouter à l'écran d'accueil », puis confirme.</p></div></div></div>`+suite;
+  else corps=`<p style="margin:6px 0 10px">Sur ordinateur, avec <b>Chrome</b> ou <b>Edge</b> : clique sur l'icône d'installation <b>⊕</b> à droite de la barre d'adresse, puis sur <b>Installer</b>.</p>
+      <p class="small" style="margin:0">Tu peux aussi simplement utiliser Mon Intermittence dans ton navigateur : ajoute la page à tes favoris.</p>`+suite;
+  m.querySelector(".card").innerHTML=`<div class="split"><h2>📲 Installer Mon Intermittence</h2><button class="link" onclick="$('payMod').classList.remove('on')">Fermer</button></div>
+    <div style="display:flex;align-items:center;gap:12px;margin:8px 0 12px"><img src="icons/icon-192.png" alt="" width="56" height="56" style="border-radius:13px"><div><b>Mon Intermittence</b><br><span class="small">Le suivi des intermittents du spectacle · gratuit</span></div></div>${corps}`;
+  m.classList.add("on");
+  const bi=$("btnInstaller");if(bi)bi.onclick=()=>{if(!promptInstall)return;promptInstall.prompt();promptInstall.userChoice.then(c=>{promptInstall=null;renderHeader();if(c&&c.outcome==="accepted")m.querySelector(".card").innerHTML=`<div class="split"><h2>✅ C'est installé !</h2><button class="link" onclick="$('payMod').classList.remove('on')">Fermer</button></div><p>Retrouve <b>Mon Intermittence</b> sur ton écran d'accueil (ou dans tes applications).</p>${suite}`;else aideInstall({accueil:true})})}}
+window.addEventListener("appinstalled",()=>{promptInstall=null;renderHeader()});
 window.aideInstall=aideInstall;window.openPay=openPay;
 if("serviceWorker" in navigator&&location.protocol.startsWith("http"))navigator.serviceWorker.register("sw.js").catch(()=>{});
 
 (function init(){
   const l=lsGet();if(l)adopt(l);syConnus=idsContrats(S);
   renderAll();synchro();verifierLicence();
-  const q=new URLSearchParams(location.search);if(q.get("achat")==="ok"){history.replaceState(null,"",location.pathname+location.hash);openPay(null,{merci:true})}const h=location.hash.slice(1);if(h&&$("s-"+h))go(h);
+  const q=new URLSearchParams(location.search);
+  if(q.has("installer")){history.replaceState(null,"",location.pathname+location.hash);if(!estInstallee())aideInstall({accueil:true})}
+  if(q.get("achat")==="ok"){history.replaceState(null,"",location.pathname+location.hash);openPay(null,{merci:true})}const h=location.hash.slice(1);if(h&&$("s-"+h))go(h);
 })();
 </script>
 </body>
