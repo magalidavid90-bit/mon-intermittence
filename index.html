@@ -931,6 +931,27 @@ async function verifierLicence(force){const l=licence();if(!l||!l.ok||!l.activat
   if(r.status===200&&r.j&&(r.j.status===undefined||r.j.status==="granted")){localStorage.setItem(LSK,JSON.stringify({...l,expire:expireLe(r.j),verif:new Date().toISOString()}));renderAll();return}
   if(r.status===404||(r.status===200&&r.j&&r.j.status&&r.j.status!=="granted")){localStorage.removeItem(LSK);localStorage.setItem(LSK+"-retiree",JSON.stringify({date:iso(today())}));renderAll();openPay()}}
 const PRO_SECTIONS={employeurs:"Mes employeurs",conges:"Mes congés spectacles",mois:"Mon argent mois par mois",simu:"Et si…"};
+// Lien personnel …/?cle=MI-… : la clé s'active toute seule (sur iPhone : après installation de l'appli)
+function bienvenueCle(k){garderCle(k);
+  if(!iosNonInstalle()){openPay(null,{bienvenue:true});const i=$("licKey");if(i)i.value=k;
+    activer(k).then(()=>{if(isPro()&&!estInstallee())setTimeout(()=>aideInstall({accueil:true,apresCle:true}),1200)});return}
+  const m=$("payMod");installOuvert=false;
+  m.querySelector(".card").innerHTML=`<div class="split"><h2>🎁 Ta version complète t'attend</h2><button class="link" onclick="$('payMod').classList.remove('on')">Fermer</button></div>
+  <p style="margin:4px 0 0">Plus que 3 petites étapes sur ton iPhone :</p>
+  <div class="etapes">
+    <div class="etape encours" id="etCopier"><div class="pastille">1</div><div class="ecorps"><div class="etitre">Copie ta clé</div>
+      <button class="b red gros" id="btnCopierCle">📋 Copier ma clé</button><div class="small mono" style="margin-top:6px;word-break:break-all;color:var(--muted)">${esc(k)}</div></div></div>
+    <div class="etape encours"><div class="pastille">2</div><div class="ecorps"><div class="etitre">Ajoute l'appli sur ton écran d'accueil</div>
+      <div class="gestes"><span class="geste">${ICONE_PARTAGE} Partager</span><span class="fl">→</span><span class="geste">➕ Sur l'écran d'accueil</span><span class="fl">→</span><span class="geste">Ajouter</span></div>
+      <p class="small" style="margin:8px 0 0">Partager est en bas de l'écran (ou dans le menu <b>⋯</b>).</p></div></div>
+    <div class="etape encours"><div class="pastille">3</div><div class="ecorps"><div class="etitre">Ouvre l'appli et touche « 📋 Coller ma clé »</div>
+      <p class="small" style="margin:0">L'icône <b>Mon Intermittence</b> est sur ton écran d'accueil. C'est fini !</p></div></div></div>
+  <div class="flecheBas" id="flecheCle" aria-hidden="true" style="display:none">⬇︎<span>Partager est ici, en bas</span></div>`;
+  m.querySelector(".card").classList.add("avecFleche");m.classList.add("on");
+  $("btnCopierCle").onclick=e=>{const b=e.currentTarget;const fini=()=>{b.textContent="✓ Clé copiée";b.classList.remove("red");$("etCopier").classList.replace("encours","fait");
+      const f=$("flecheCle");if(f&&innerWidth<700)f.style.display="";m.scrollTo({top:m.scrollHeight,behavior:"smooth"})};
+    if(navigator.clipboard)navigator.clipboard.writeText(k).then(fini,fini);else fini()}}
+window.bienvenueCle=bienvenueCle;
 function openPay(raison,opts){opts=opts||{};installOuvert=false;$("payMod").querySelector(".card").classList.remove("avecFleche");const m=$("payMod");const restant=Math.max(0,CONFIG.lecturesGratuites-(S.lectures||0));
   const ios=iosNonInstalle(),vente=CONFIG.ventesOuvertes&&CONFIG.lienAchat,actif=isPro(),l=licence();
   const retiree=!opts.merci&&!actif&&(localStorage.getItem(LSK+"-retiree")||(l&&l.expire));
@@ -951,9 +972,9 @@ function openPay(raison,opts){opts=opts||{};installOuvert=false;$("payMod").quer
       <p class="small" style="margin:8px 0 0">Le bouton Partager est en bas de Safari. Ouvre ensuite <b>Mon Intermittence</b> depuis ton écran d'accueil : la suite se fait dans l'appli.</p>
       <p class="small" style="margin:6px 0 0;color:var(--muted)">Pourquoi ? Sur iPhone, Safari et l'appli installée ne partagent pas leurs données : ta clé doit être activée dans l'appli.</p></div>`);
   const eAchat=etape(ios?2:1,opts.merci?"fait":(ios?"plustard":"encours"),opts.merci?"Paiement reçu, merci ! 🎉":"Choisis la version complète",
-      prix+`<div class="actions" style="margin-top:10px">${vente?`<a class="b red gros" href="${esc(CONFIG.lienAchat)}" target="_blank" rel="noopener">Acheter · ${CONFIG.prix} ${CONFIG.duree}</a>`:`<span class="b ghost" style="cursor:default">Version complète bientôt disponible</span>`}</div>`);
+      prix+`<div class="actions" style="margin-top:10px">${vente?`<a class="b red gros" href="${esc(CONFIG.lienAchat)}" target="_blank" rel="noopener" onclick="localStorage.setItem('mi-achat-en-cours',Date.now())">Acheter · ${CONFIG.prix} ${CONFIG.duree}</a>`:`<span class="b ghost" style="cursor:default">Version complète bientôt disponible</span>`}</div>`);
   const eCle=etape(ios?3:2,ios?"plustard":"encours","Colle ta clé",`
-      <p class="small" style="margin:0 0 10px">Ouvre l'e-mail de <b>Polar</b> reçu après le paiement et <b>copie ta clé</b> (elle commence par <b>MI-</b>). Puis :</p>
+      <p class="small" style="margin:0 0 10px">Ouvre l'e-mail de <b>Polar</b> reçu après le paiement et <b>copie ta clé</b> (elle commence par <b>MI-</b> ; appui long dessus → <b>Copier</b>). Puis :</p>
       <button class="b red gros" id="licColler" type="button">📋 Coller ma clé</button>
       <div class="clebox"><input id="licKey" placeholder="ou colle-la ici : MI-…" autocomplete="off" autocapitalize="characters" spellcheck="false"><button class="b" id="licGo">Activer</button></div>
       <div class="small" id="licMsg" style="margin-top:8px"></div>
@@ -961,6 +982,8 @@ function openPay(raison,opts){opts=opts||{};installOuvert=false;$("payMod").quer
   let corps;
   if(actif){corps=`<div class="note" style="background:#E3F1E6;margin-top:10px"><b>✅ Ta version complète est active sur cet appareil${l&&l.expire?` jusqu'au ${fd(new Date(l.expire))}`:""}.</b><br><span class="small">Gérer ton abonnement ou changer d'appareil : ${portail}.</span></div>${inclus}`}
   else{corps=(retiree?`<div class="note" style="margin:8px 0"><b>Ta version complète n'est plus active sur cet appareil.</b> Ton abonnement n'a pas été renouvelé (ou ta clé a été désactivée, ou cet appareil a été libéré depuis ton espace Polar). Tu es repassé·e en version gratuite ; tes données sont toujours là.${CONFIG.lienAchat?`<div style="margin-top:10px"><a class="b red" href="${esc(CONFIG.lienAchat)}" target="_blank" rel="noopener">Renouveler mon abonnement</a></div>`:""}</div>`:"")
+    +(opts.bienvenue?`<p class="note" id="merciNote" style="margin:10px 0;background:#E3F1E6">🎁 <b>Bienvenue !</b> Ta clé est prête : activation de ta version complète…</p>`:"")
+    +(opts.retourAchat&&!opts.merci?`<p class="note" id="merciNote" style="margin:10px 0;background:#E3F1E6">💳 <b>Tu viens de payer ?</b> Ouvre l'e-mail de Polar, copie ta clé, puis reviens toucher <b>📋 Coller ma clé</b>.</p>`:"")
     +(opts.merci?`<p class="note" id="merciNote" style="margin:10px 0;background:#E3F1E6">🎉 <b>Merci !</b> Ta clé de licence t'a été envoyée par e-mail (expéditeur Polar). ${ios?"Sur iPhone, suis d'abord les étapes ci-dessous : installe l'appli, puis colle ta clé dedans.":"Il ne reste plus qu'à la coller ci-dessous."}</p>`:"")
     +`<div class="etapes">${ios?eInstall+eAchat+eCle:eAchat+eCle}</div>`
     +(ios||opts.merci?"":inclus)
@@ -974,7 +997,7 @@ function openPay(raison,opts){opts=opts||{};installOuvert=false;$("payMod").quer
   k.addEventListener("paste",()=>setTimeout(()=>{const v=extraireCle(k.value);if(v){k.value=v;activer(v)}},30));
   $("licColler").onclick=collerCle;
   const attente=cleEnAttente();if(attente&&!k.value)k.value=attente;
-  if(opts.merci){$("merciNote").scrollIntoView({block:"start"});if(!ios)k.focus({preventScroll:true})}}
+  if(opts.merci||opts.retourAchat||opts.bienvenue){$("merciNote").scrollIntoView({block:"start"});if(!ios&&!opts.bienvenue)k.focus({preventScroll:true})}}
 // Extrait une clé MI-… d'un texte copié (un e-mail entier, des espaces…)
 function extraireCle(t){t=String(t||"").trim();const m=t.match(/\bMI-[A-Za-z0-9-]{4,}/i);return m?m[0]:(t&&t.length<80&&!/\s/.test(t)?t:"")}
 async function collerCle(){const k=$("licKey"),msg=$("licMsg");
@@ -992,7 +1015,7 @@ async function activer(key){const msg=$("licMsg");key=String(key||"").trim();if(
   if(!navigator.onLine){msg.innerHTML='<span class="bad">Pas de connexion internet : réessaie quand tu es connecté.</span>';return}
   msg.textContent="Vérification…";
   let r;try{r=await polar("activate",{key,label:nomAppareil()})}catch(e){msg.innerHTML='<span class="bad">Impossible de joindre le service de vérification. Vérifie ta connexion internet et réessaie.</span>';return}
-  if(r.status>=200&&r.status<300&&r.j&&r.j.id){const exp=expireLe(r.j);localStorage.setItem(LSK,JSON.stringify({ok:true,key,activation_id:r.j.id,expire:exp,date:iso(today()),verif:new Date().toISOString()}));oublierCle();ok(`Version complète activée sur cet appareil${exp?` jusqu'au ${fd(new Date(exp))}`:""}. Merci !`);return}
+  if(r.status>=200&&r.status<300&&r.j&&r.j.id){const exp=expireLe(r.j);localStorage.setItem(LSK,JSON.stringify({ok:true,key,activation_id:r.j.id,expire:exp,date:iso(today()),verif:new Date().toISOString()}));oublierCle();localStorage.removeItem("mi-achat-en-cours");ok(`Version complète activée sur cet appareil${exp?` jusqu'au ${fd(new Date(exp))}`:""}. Merci !`);return}
   if(r.status===403){const d=JSON.stringify(r.j||""),lien=`<a href="${esc(CONFIG.portailClient)}" target="_blank" rel="noopener">${esc(CONFIG.portailClient)}</a>`;
     msg.innerHTML=/limit|activation/i.test(d)?`<span class="bad">Cette clé est déjà active sur un autre appareil.</span> Pour la déplacer ici, connecte-toi à ton espace client : ${lien} (rubrique clés de licence), désactive l'ancien appareil, puis réessaie.`
       :`<span class="bad">Cette clé ne peut pas être activée : elle est déjà active sur un autre appareil, ou ton abonnement n'est plus actif.</span> Vérifie dans ton espace client : ${lien} (rubrique clés de licence).`;return}
@@ -1259,7 +1282,8 @@ function renderSync(){const el=$("syncCard");if(!el)return;
     <button class="b ghost" onclick="synchro()">Synchroniser maintenant</button>
     <button class="b ghost" style="color:var(--red)" onclick="syArreter(this)">Arrêter la synchronisation sur cet appareil</button></div>`}
 window.syDemarrer=syDemarrer;window.syRejoindre=syRejoindre;window.syArreter=syArreter;window.synchro=synchro;
-document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible"){synchro();verifierLicence()}});
+document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible"){synchro();verifierLicence();
+  const a=+localStorage.getItem("mi-achat-en-cours")||0;if(a&&!isPro()&&Date.now()-a<864e5&&!$("payMod").classList.contains("on")&&!iosNonInstalle())openPay(null,{retourAchat:true})}});
 window.addEventListener("online",()=>synchro());
 setInterval(()=>{if(document.visibilityState==="visible")synchro()},60000);
 
@@ -1273,6 +1297,7 @@ function navInApp(){const u=navigator.userAgent;return /FBAN|FBAV|Instagram|What
 function aideInstall(opts){opts=opts||{};const m=$("payMod");const ios=estIOS(),android=/android/i.test(navigator.userAgent);
   if(promptInstall&&!opts.accueil){promptInstall.prompt();promptInstall.userChoice.finally(()=>{promptInstall=null;renderHeader()});return}
   installOuvert=true;
+  const bravo=opts.apresCle?`<div class="note" style="background:#E3F1E6;margin:0 0 12px">✅ <b>Version complète activée !</b> Dernière étape : mets l'appli sur ton écran d'accueil.</div>`:"";
   const suite=`<p class="small" style="margin:14px 0 0;color:var(--muted)">Ensuite, dans l'appli, touche <b>⭐ Version complète</b> pour activer ta clé.</p>`;
   let corps;
   if(estInstallee())corps=`<div class="note" style="background:#E3F1E6">✅ <b>L'appli est installée</b> et ouverte. Tu peux commencer !</div>`;
@@ -1294,7 +1319,7 @@ function aideInstall(opts){opts=opts||{};const m=$("payMod");const ios=estIOS(),
   else corps=`<p style="margin:6px 0 10px">Sur ordinateur, avec <b>Chrome</b> ou <b>Edge</b> : clique sur l'icône d'installation <b>⊕</b> à droite de la barre d'adresse, puis sur <b>Installer</b>.</p>
       <p class="small" style="margin:0">Tu peux aussi simplement utiliser Mon Intermittence dans ton navigateur : ajoute la page à tes favoris.</p>`+suite;
   m.querySelector(".card").innerHTML=`<div class="split"><h2>📲 Installer Mon Intermittence</h2><button class="link" onclick="$('payMod').classList.remove('on')">Fermer</button></div>
-    <div style="display:flex;align-items:center;gap:12px;margin:8px 0 12px"><img src="icons/icon-192.png" alt="" width="56" height="56" style="border-radius:13px"><div><b>Mon Intermittence</b><br><span class="small">Le suivi des intermittents du spectacle · gratuit</span></div></div>${corps}
+    <div style="display:flex;align-items:center;gap:12px;margin:8px 0 12px"><img src="icons/icon-192.png" alt="" width="56" height="56" style="border-radius:13px"><div><b>Mon Intermittence</b><br><span class="small">Le suivi des intermittents du spectacle · gratuit</span></div></div>${bravo}${corps}
     ${estInstallee()?"":`<p style="text-align:center;margin:16px 0 0"><button class="link small" onclick="$('payMod').classList.remove('on')">Plus tard, continuer dans le navigateur</button></p>`}`;
   m.querySelector(".card").classList.toggle("avecFleche",!!m.querySelector(".flecheBas"));m.classList.add("on");
   const bi=$("btnInstaller");if(bi)bi.onclick=()=>{if(!promptInstall)return;promptInstall.prompt();promptInstall.userChoice.then(c=>{promptInstall=null;renderHeader();if(c&&c.outcome==="accepted")m.querySelector(".card").innerHTML=`<div class="split"><h2>✅ C'est installé !</h2><button class="link" onclick="$('payMod').classList.remove('on')">Fermer</button></div><p>Retrouve <b>Mon Intermittence</b> sur ton écran d'accueil (ou dans tes applications).</p>${suite}`;else aideInstall({accueil:true})})}}
@@ -1306,9 +1331,12 @@ if("serviceWorker" in navigator&&location.protocol.startsWith("http"))navigator.
   const l=lsGet();if(l)adopt(l);syConnus=idsContrats(S);
   renderAll();synchro();verifierLicence();
   const q=new URLSearchParams(location.search);
-  const lienInstall=q.has("installer");if(lienInstall)history.replaceState(null,"",location.pathname+location.hash);
+  const lienInstall=q.has("installer"),cleLien=extraireCle(q.get("cle")||"");
+  if(lienInstall||cleLien)history.replaceState(null,"",location.pathname+location.hash);
+  if(cleLien&&!isPro())bienvenueCle(cleLien);
+  else if(estInstallee()&&!isPro()&&cleEnAttente()){openPay(null,{bienvenue:true});activer(cleEnAttente())}
   // L'installation est proposée en premier, à chaque nouvelle visite tant que l'appli n'est pas installée
-  if(!estInstallee()&&q.get("achat")!=="ok"&&(lienInstall||!sessionStorage.getItem("mi-install-vu"))){sessionStorage.setItem("mi-install-vu","1");aideInstall({accueil:true})}
+  else if(!estInstallee()&&q.get("achat")!=="ok"&&(lienInstall||!sessionStorage.getItem("mi-install-vu"))){sessionStorage.setItem("mi-install-vu","1");aideInstall({accueil:true})}
   if(q.get("achat")==="ok"){history.replaceState(null,"",location.pathname+location.hash);openPay(null,{merci:true})}const h=location.hash.slice(1);if(h&&$("s-"+h))go(h);
 })();
 </script>

@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex">
+<title>Créer un lien testeur · Mon Intermittence</title>
+<style>body{margin:0;background:#F3EFE8;color:#141414;font:16px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif}main{max-width:620px;margin:0 auto;padding:24px}
+h1{font-size:24px}input,textarea{width:100%;box-sizing:border-box;border:1px solid #d8d2c8;border-radius:10px;padding:12px;font:15px ui-monospace,monospace;background:#fff}
+button{border:0;border-radius:10px;padding:12px 16px;font:600 15px system-ui;background:#C8102E;color:#fff;cursor:pointer;margin:8px 8px 0 0}button.g{background:#121212}
+.box{background:#fff;border-radius:12px;padding:16px;margin-top:16px}.small{font-size:13px;color:#6b665e}</style></head>
+<body><main>
+<h1>Créer un lien testeur</h1>
+<p>Colle une clé Polar (elle commence par <b>MI-</b>). Le lien obtenu active la version complète tout seul chez le testeur. <b>Un lien = une clé = un testeur</b> (la clé ne marche que sur un appareil).</p>
+<input id="cle" placeholder="MI-…" autocomplete="off" spellcheck="false">
+<div id="res" class="box" hidden>
+  <div class="small">Lien à envoyer :</div>
+  <textarea id="lien" rows="3" readonly></textarea>
+  <button id="copier">Copier le lien</button><button class="g" id="partager">Partager…</button><button class="g" id="message">Copier le message complet</button>
+  <p class="small">Ce lien contient la clé : ne l'envoie qu'à la personne concernée.</p>
+</div>
+<script>
+const base=new URL("../",location.href).href;
+const $=i=>document.getElementById(i);
+function maj(){const m=($("cle").value.match(/MI-[A-Za-z0-9-]{4,}/i)||[""])[0];$("res").hidden=!m;if(m)$("lien").value=base+"?cle="+encodeURIComponent(m)}
+$("cle").addEventListener("input",maj);
+const copier=(t,b)=>navigator.clipboard.writeText(t).then(()=>{const o=b.textContent;b.textContent="Copié ✓";setTimeout(()=>b.textContent=o,1500)});
+$("copier").onclick=e=>copier($("lien").value,e.target);
+$("partager").onclick=()=>navigator.share?navigator.share({title:"Mon Intermittence",text:"Ta version complète de Mon Intermittence :",url:$("lien").value}):copier($("lien").value,$("partager"));
+$("message").onclick=e=>copier(`Bonjour ! Voici ton accès testeur à Mon Intermittence (version complète offerte) :\n\n👉 ${$("lien").value}\n\nTouche le lien, c'est tout : l'appli s'ouvre et ta version complète s'active. Sur iPhone, ouvre-le dans Safari et suis les 3 petites étapes affichées.\n\nDis-moi ce qui te semble faux ou compliqué, avec une capture d'écran si possible. Merci !`,e.target);
+</script></main></body></html>
