@@ -5,7 +5,7 @@ Outil de suivi pour les intermittents du spectacle (annexes 8 et 10) : compteur 
 - **Appli web installable** (PWA) : icône sur l'écran d'accueil, fonctionne hors ligne.
 - **Données sur l'appareil** de l'utilisateur (localStorage) : aucun serveur, aucun compte. Sauvegarde par export/import d'un fichier.
 - **Lecture des PDF sans IA**, sur l'appareil, avec pdf.js (`vendor/`).
-- **Version gratuite / complète** : 9,90 € pour 1 an, vendue par Polar (revendeur officiel), déverrouillage par clé de licence Polar.
+- **Version gratuite / complète** : abonnement annuel de 9,90 € (reconduction tacite), vendu par Polar (revendeur officiel), déverrouillage par clé de licence Polar.
 
 ## Fichiers
 
@@ -23,7 +23,7 @@ Outil de suivi pour les intermittents du spectacle (annexes 8 et 10) : compteur 
 En haut de la section `CONFIGURATION DE LA VENTE` dans `index.html` :
 
 - `ventesOuvertes` : `false` tant que la vente n'est pas ouverte (le bouton d'achat est remplacé par « Version complète bientôt disponible » ; la saisie d'une clé reste possible). Passer à `true` pour vendre.
-- `prix`, `duree` : prix et durée affichés (« 9,90 € pour 1 an »)
+- `prix`, `duree` : prix et durée affichés (« 9,90 € par an »)
 - `lienAchat` : lien d'achat Polar
 - `polarOrgId` : identifiant de l'organisation Polar (activation et vérification des clés)
 - `lecturesGratuites` : nombre de lectures automatiques offertes
@@ -36,7 +36,7 @@ En haut de la section `CONFIGURATION DE LA VENTE` dans `index.html` :
 - Revérification au plus une fois par semaine si l'appareil est en ligne (`.../validate` avec `activation_id`). Clé révoquée, expirée ou appareil libéré → retour à la version gratuite. Hors ligne ou erreur réseau : la licence est conservée.
 - Si Polar indique une date d'expiration (`expires_at`), elle est affichée et respectée.
 - Après paiement, Polar renvoie vers `?achat=ok` : l'appli remercie et ouvre directement le champ de saisie de la clé.
-- Le client libère un appareil depuis son espace client Polar.
+- Le client libère un appareil et résilie son abonnement depuis son espace client Polar. À la fin de l'abonnement, Polar désactive la clé : l'appli repasse en version gratuite à la vérification suivante.
 
 ## À mettre à jour chaque année
 

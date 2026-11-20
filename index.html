@@ -871,7 +871,7 @@ $("impJson").onchange=async e=>{const f=e.target.files[0];if(!f)return;try{const
 /* ============ CONFIGURATION DE LA VENTE ============ */
 const CONFIG={
   prix:"9,90 €",
-  duree:"pour 1 an",     // durée d'accès affichée à côté du prix
+  duree:"par an",        // affiché à côté du prix (abonnement annuel reconduit tacitement)
   ventesOuvertes:false,  // false = bouton d'achat caché (« Version complète bientôt disponible ») ; passer à true quand le SIRET est là
   lienAchat:"https://buy.polar.sh/polar_cl_N5Oew4MaxWrsvXFmlQSD1WE38Dawus81LNIuz4ctLgd", // lien d'achat Polar
   polarOrgId:"d1d82a96-825d-4207-89f1-466c5eb5214e", // organisation Polar (activation et vérification des clés)
@@ -903,7 +903,7 @@ const PRO_SECTIONS={employeurs:"Mes employeurs",conges:"Mes congés spectacles",
 function openPay(raison,opts){opts=opts||{};const m=$("payMod");const restant=Math.max(0,CONFIG.lecturesGratuites-(S.lectures||0));
   m.querySelector(".card").innerHTML=`<div class="split"><h2>⭐ Version complète</h2><button class="link" onclick="$('payMod').classList.remove('on')">Fermer</button></div>
   ${raison?`<p class="small" style="margin-top:4px">${esc(raison)}</p>`:""}
-  ${!opts.merci&&!isPro()&&(localStorage.getItem(LSK+"-retiree")||(licence()&&licence().expire))?`<p class="note" style="margin:8px 0">La version complète n'est plus active sur cet appareil : ta période d'un an est terminée, ta clé a été désactivée, ou cet appareil a été libéré depuis ton espace Polar. Tes données sont toujours là.</p>`:""}
+  ${!opts.merci&&!isPro()&&(localStorage.getItem(LSK+"-retiree")||(licence()&&licence().expire))?`<p class="note" style="margin:8px 0">La version complète n'est plus active sur cet appareil : ton abonnement est terminé, ta clé a été désactivée, ou cet appareil a été libéré depuis ton espace Polar. Tes données sont toujours là.</p>`:""}
   <ul style="line-height:1.8;padding-left:20px;margin:10px 0">
     <li>Lecture automatique de toutes tes AEM et documents France Travail (version gratuite : ${CONFIG.lecturesGratuites}, il t'en reste ${restant})</li>
     <li>Mes employeurs : heures, salaires et taux horaire par employeur</li>
@@ -912,6 +912,7 @@ function openPay(raison,opts){opts=opts||{};const m=$("payMod");const restant=Ma
     ${syDispo()?"<li>La synchronisation entre ton téléphone et ton ordinateur, chiffrée</li>":""}
     <li>Les mises à jour des barèmes chaque année</li></ul>
   <div class="num" style="font-size:28px;font-weight:600;margin:6px 0">${CONFIG.prix} <span class="small">${CONFIG.duree}</span></div>
+  <p class="small" style="margin:0 0 10px">Abonnement d'un an, renouvelé automatiquement chaque année au même prix sur la même carte. Pour ne pas le renouveler, résilie depuis ton espace client Polar au plus tard 15 jours avant la date anniversaire (<a href="cgv.html" target="_blank">conditions de vente</a>).</p>
   <div class="actions">${CONFIG.ventesOuvertes&&CONFIG.lienAchat?`<a class="b red" href="${esc(CONFIG.lienAchat)}" target="_blank" rel="noopener" style="text-decoration:none">Acheter la version complète</a>`:`<span class="b ghost" style="cursor:default">Version complète bientôt disponible</span>`}</div>
   ${opts.merci?`<p class="note" id="merciNote" style="margin:18px 0 8px;background:#E3F1E6">🎉 <b>Merci !</b> Ta clé de licence t'a été envoyée par e-mail (expéditeur Polar). Colle-la ici pour débloquer la version complète.</p>`:""}
   <h3 style="margin-top:18px">J'ai déjà une clé</h3>
