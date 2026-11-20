@@ -875,6 +875,7 @@ const CONFIG={
   ventesOuvertes:false,  // false = bouton d'achat caché (« Version complète bientôt disponible ») ; passer à true quand le SIRET est là
   lienAchat:"https://buy.polar.sh/polar_cl_YVC3zPnMlFaDewjjSEF1Utj2iLHxrs8X57nLj2oCsYX", // lien d'achat Polar (abonnement annuel)
   appareilsMax:1,        // appareils par clé (doit correspondre à la limite d'activation réglée dans Polar)
+  portailClient:"https://polar.sh/mon-intermittence/portal", // espace client Polar (clés de licence, appareils, résiliation)
   polarOrgId:"d1d82a96-825d-4207-89f1-466c5eb5214e", // organisation Polar (activation et vérification des clés)
   cleTest:"ESSAI-2026",  // clé d'essai, acceptée uniquement en local (localhost / 127.0.0.1)
   lecturesGratuites:5,   // lectures automatiques offertes dans la version gratuite
@@ -887,6 +888,16 @@ function licence(){try{return JSON.parse(localStorage.getItem(LSK)||"null")}catc
 // Clés de licence Polar : CONFIG.appareilsMax appareils par clé (le client libère un appareil depuis son espace Polar).
 const POLAR_API="https://api.polar.sh/v1/customer-portal/license-keys/";
 const estLocal=()=>["localhost","127.0.0.1"].includes(location.hostname);
+// iOS : l'appli installée sur l'écran d'accueil n'a PAS le même stockage que Safari (Polar la compterait comme un 2e appareil).
+const estIOS=()=>/iphone|ipad|ipod/i.test(navigator.userAgent)||(navigator.platform==="MacIntel"&&navigator.maxTouchPoints>1);
+const iosNonInstalle=()=>estIOS()&&!estInstallee();
+const CLE_ATTENTE="mon-intermittence-cle-attente";
+function garderCle(k){try{localStorage.setItem(CLE_ATTENTE,k);document.cookie=`mi_cle=${encodeURIComponent(k)};max-age=86400;path=/;SameSite=Lax`}catch(e){}
+  try{navigator.clipboard&&navigator.clipboard.writeText(k).catch(()=>{})}catch(e){}}
+function cleEnAttente(){try{const l=localStorage.getItem(CLE_ATTENTE);if(l)return l;const m=document.cookie.match(/(?:^|; )mi_cle=([^;]*)/);return m?decodeURIComponent(m[1]):""}catch(e){return ""}}
+function oublierCle(){try{localStorage.removeItem(CLE_ATTENTE);document.cookie="mi_cle=;max-age=0;path=/"}catch(e){}}
+const ETAPES_IOS=`<ol style="line-height:1.8;padding-left:20px;margin:6px 0"><li>Touche le bouton <b>Partager</b> (le carré avec une flèche vers le haut), en bas de Safari</li><li>Choisis <b>Sur l'écran d'accueil</b>, puis touche <b>Ajouter</b></li><li>Ouvre <b>l'appli Mon Intermittence</b> depuis ton écran d'accueil</li><li>Touche <b>⭐ Version complète</b> et colle ta clé</li></ol>`;
+const MSG_INSTALL_IOS=`<div class="note" style="margin:8px 0"><b>Installe d'abord l'appli sur ton écran d'accueil (bouton Partager puis « Sur l'écran d'accueil »), ouvre-la, puis colle ta clé dedans.</b>${ETAPES_IOS}<span class="small">Sur iPhone, l'appli installée et Safari ne partagent pas leurs données : une clé activée dans Safari ne marcherait pas dans l'appli.</span></div>`;
 function isPro(){const l=licence();if(!l||!l.ok)return false;if(l.test&&!estLocal())return false;if(l.expire&&new Date(l.expire)<new Date())return false;return true}
 const expireLe=j=>j&&(j.expires_at!==undefined?j.expires_at:(j.license_key&&j.license_key.expires_at))||null;
 function nomAppareil(){const u=navigator.userAgent;const t=/iphone/i.test(u)?"iPhone":/ipad/i.test(u)?"iPad":/android/i.test(u)?"Android":/mac/i.test(u)?"Mac":/windows/i.test(u)?"Windows":/linux/i.test(u)?"Linux":"Appareil";
@@ -915,22 +926,27 @@ function openPay(raison,opts){opts=opts||{};const m=$("payMod");const restant=Ma
   <div class="num" style="font-size:28px;font-weight:600;margin:6px 0">${CONFIG.prix} <span class="small">${CONFIG.duree}</span></div>
   <p class="small" style="margin:0 0 10px">Abonnement annuel de 9,90 €, renouvelé automatiquement chaque année, résiliable à tout moment depuis ton espace client Polar (<a href="cgv.html" target="_blank">conditions de vente</a>).</p>
   <div class="actions">${CONFIG.ventesOuvertes&&CONFIG.lienAchat?`<a class="b red" href="${esc(CONFIG.lienAchat)}" target="_blank" rel="noopener" style="text-decoration:none">Acheter la version complète</a>`:`<span class="b ghost" style="cursor:default">Version complète bientôt disponible</span>`}</div>
-  ${opts.merci?`<p class="note" id="merciNote" style="margin:18px 0 8px;background:#E3F1E6">🎉 <b>Merci !</b> Ta clé de licence t'a été envoyée par e-mail (expéditeur Polar). Colle-la ici pour débloquer la version complète.</p>`:""}
+  ${opts.merci?`<p class="note" id="merciNote" style="margin:18px 0 8px;background:#E3F1E6">🎉 <b>Merci !</b> Ta clé de licence t'a été envoyée par e-mail (expéditeur Polar). ${iosNonInstalle()?"Sur iPhone, suis d'abord les étapes ci-dessous :":"Colle-la ici pour débloquer la version complète."}</p>`:""}
+  ${iosNonInstalle()?`<div id="iosInstall">${MSG_INSTALL_IOS}</div>`:""}
   <h3 style="margin-top:18px">J'ai déjà une clé</h3>
-  <p class="small" style="margin:0 0 8px">Ta clé (elle commence par <b>MI-</b>) est dans l'e-mail envoyé par Polar après l'achat. Elle fonctionne sur <b>${CONFIG.appareilsMax>1?CONFIG.appareilsMax+" appareils":"1 seul appareil"}</b> à la fois.${/iphone|ipad|ipod/i.test(navigator.userAgent)&&!estInstallee()?" <b>Sur iPhone : installe d'abord l'appli sur l'écran d'accueil (📲 Installer), puis active ta clé depuis l'appli installée.</b>":""}</p>
+  <p class="small" style="margin:0 0 8px">Ta clé (elle commence par <b>MI-</b>) est dans l'e-mail envoyé par Polar après l'achat. Elle fonctionne sur <b>${CONFIG.appareilsMax>1?CONFIG.appareilsMax+" appareils":"1 seul appareil"}</b> à la fois.</p>
   <div style="display:flex;gap:8px;flex-wrap:wrap"><input id="licKey" placeholder="Colle ta clé ici" style="flex:1;min-width:200px;border:1px solid var(--line);border-radius:8px;padding:10px;font:14px 'JetBrains Mono',monospace"><button class="b" id="licGo">Activer</button></div>
   <div class="small" id="licMsg" style="margin-top:8px"></div>`;
   m.classList.add("on");$("licGo").onclick=()=>activer($("licKey").value.trim());
-  if(opts.merci){const k=$("licKey");$("merciNote").scrollIntoView({block:"start"});k.focus({preventScroll:true})}}
+  const k=$("licKey"),attente=cleEnAttente();if(attente&&!k.value)k.value=attente;
+  if(opts.merci){$("merciNote").scrollIntoView({block:"start"});if(!iosNonInstalle())k.focus({preventScroll:true})}}
 async function activer(key){const msg=$("licMsg");key=String(key||"").trim();if(!key){msg.textContent="Colle d'abord ta clé.";return}
   const ok=t=>{msg.innerHTML=`<span class="ok">✅ ${t}</span>`;localStorage.removeItem(LSK+"-retiree");renderAll()};
   if(key.toUpperCase()===CONFIG.cleTest){if(estLocal()){localStorage.setItem(LSK,JSON.stringify({ok:true,key,test:true,date:iso(today())}));ok("Version complète activée (clé de test, en local).")}else msg.innerHTML='<span class="bad">Cette clé de test n\'est plus valable. Utilise la clé reçue par e-mail après l\'achat.</span>';return}
+  if(iosNonInstalle()){garderCle(key);msg.innerHTML=MSG_INSTALL_IOS+(navigator.clipboard?'<span class="small">Ta clé a été copiée : tu n\'auras qu\'à la coller dans l\'appli.</span>':"");return}
   const l=licence();if(l&&l.ok&&l.key===key&&l.activation_id&&isPro()){ok("Cette clé est déjà activée sur cet appareil.");return}
   if(!navigator.onLine){msg.innerHTML='<span class="bad">Pas de connexion internet : réessaie quand tu es connecté.</span>';return}
   msg.textContent="Vérification…";
   let r;try{r=await polar("activate",{key,label:nomAppareil()})}catch(e){msg.innerHTML='<span class="bad">Impossible de joindre le service de vérification. Vérifie ta connexion internet et réessaie.</span>';return}
-  if(r.status>=200&&r.status<300&&r.j&&r.j.id){const exp=expireLe(r.j);localStorage.setItem(LSK,JSON.stringify({ok:true,key,activation_id:r.j.id,expire:exp,date:iso(today()),verif:new Date().toISOString()}));ok(`Version complète activée sur cet appareil${exp?` jusqu'au ${fd(new Date(exp))}`:""}. Merci !`);return}
-  if(r.status===403){const d=JSON.stringify(r.j||"");msg.innerHTML=/limit|activation/i.test(d)?`<span class="bad">Cette clé est déjà utilisée sur un autre appareil. Libère-le depuis ton espace client Polar pour l'activer ici.</span>`:`<span class="bad">Cette clé ne peut pas être activée : elle est déjà utilisée sur un autre appareil, ou ton abonnement n'est plus actif.</span><br>Libère l'autre appareil ou renouvelle ton abonnement depuis ton espace client Polar (lien dans l'e-mail de Polar).`;return}
+  if(r.status>=200&&r.status<300&&r.j&&r.j.id){const exp=expireLe(r.j);localStorage.setItem(LSK,JSON.stringify({ok:true,key,activation_id:r.j.id,expire:exp,date:iso(today()),verif:new Date().toISOString()}));oublierCle();ok(`Version complète activée sur cet appareil${exp?` jusqu'au ${fd(new Date(exp))}`:""}. Merci !`);return}
+  if(r.status===403){const d=JSON.stringify(r.j||""),lien=`<a href="${esc(CONFIG.portailClient)}" target="_blank" rel="noopener">${esc(CONFIG.portailClient)}</a>`;
+    msg.innerHTML=/limit|activation/i.test(d)?`<span class="bad">Cette clé est déjà active sur un autre appareil.</span> Pour la déplacer ici, connecte-toi à ton espace client : ${lien} (rubrique clés de licence), désactive l'ancien appareil, puis réessaie.`
+      :`<span class="bad">Cette clé ne peut pas être activée : elle est déjà active sur un autre appareil, ou ton abonnement n'est plus actif.</span> Vérifie dans ton espace client : ${lien} (rubrique clés de licence).`;return}
   if(r.status===404||r.status===422){msg.innerHTML='<span class="bad">Clé inconnue. Copie-la exactement depuis l\'e-mail de Polar : elle commence par MI-.</span>';return}
   msg.innerHTML='<span class="bad">Le service de vérification ne répond pas pour l\'instant. Réessaie dans quelques minutes.</span>'}
 
