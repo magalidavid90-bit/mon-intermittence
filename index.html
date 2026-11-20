@@ -874,6 +874,7 @@ const CONFIG={
   duree:"par an",        // affiché à côté du prix (abonnement annuel reconduit tacitement)
   ventesOuvertes:false,  // false = bouton d'achat caché (« Version complète bientôt disponible ») ; passer à true quand le SIRET est là
   lienAchat:"https://buy.polar.sh/polar_cl_N5Oew4MaxWrsvXFmlQSD1WE38Dawus81LNIuz4ctLgd", // lien d'achat Polar
+  appareilsMax:2,        // appareils par clé (doit correspondre à la limite d'activation réglée dans Polar)
   polarOrgId:"d1d82a96-825d-4207-89f1-466c5eb5214e", // organisation Polar (activation et vérification des clés)
   cleTest:"ESSAI-2026",  // clé d'essai, acceptée uniquement en local (localhost / 127.0.0.1)
   lecturesGratuites:5,   // lectures automatiques offertes dans la version gratuite
@@ -883,7 +884,7 @@ const CONFIG={
 };
 const LSK="mon-intermittence-licence";
 function licence(){try{return JSON.parse(localStorage.getItem(LSK)||"null")}catch(e){return null}}
-// Clés de licence Polar : 3 appareils maximum par clé (le client libère un appareil depuis son espace Polar).
+// Clés de licence Polar : CONFIG.appareilsMax appareils par clé (le client libère un appareil depuis son espace Polar).
 const POLAR_API="https://api.polar.sh/v1/customer-portal/license-keys/";
 const estLocal=()=>["localhost","127.0.0.1"].includes(location.hostname);
 function isPro(){const l=licence();if(!l||!l.ok)return false;if(l.test&&!estLocal())return false;if(l.expire&&new Date(l.expire)<new Date())return false;return true}
@@ -916,7 +917,7 @@ function openPay(raison,opts){opts=opts||{};const m=$("payMod");const restant=Ma
   <div class="actions">${CONFIG.ventesOuvertes&&CONFIG.lienAchat?`<a class="b red" href="${esc(CONFIG.lienAchat)}" target="_blank" rel="noopener" style="text-decoration:none">Acheter la version complète</a>`:`<span class="b ghost" style="cursor:default">Version complète bientôt disponible</span>`}</div>
   ${opts.merci?`<p class="note" id="merciNote" style="margin:18px 0 8px;background:#E3F1E6">🎉 <b>Merci !</b> Ta clé de licence t'a été envoyée par e-mail (expéditeur Polar). Colle-la ici pour débloquer la version complète.</p>`:""}
   <h3 style="margin-top:18px">J'ai déjà une clé</h3>
-  <p class="small" style="margin:0 0 8px">Ta clé (elle commence par <b>MI-</b>) est dans l'e-mail envoyé par Polar après l'achat. Elle fonctionne sur <b>3 appareils</b> maximum.${/iphone|ipad|ipod/i.test(navigator.userAgent)&&!estInstallee()?" <b>Sur iPhone : installe d'abord l'appli sur l'écran d'accueil (📲 Installer), puis active ta clé depuis l'appli installée.</b>":""}</p>
+  <p class="small" style="margin:0 0 8px">Ta clé (elle commence par <b>MI-</b>) est dans l'e-mail envoyé par Polar après l'achat. Elle fonctionne sur <b>${CONFIG.appareilsMax} appareils</b> maximum (par exemple ton téléphone et ton ordinateur).${/iphone|ipad|ipod/i.test(navigator.userAgent)&&!estInstallee()?" <b>Sur iPhone : installe d'abord l'appli sur l'écran d'accueil (📲 Installer), puis active ta clé depuis l'appli installée.</b>":""}</p>
   <div style="display:flex;gap:8px;flex-wrap:wrap"><input id="licKey" placeholder="Colle ta clé ici" style="flex:1;min-width:200px;border:1px solid var(--line);border-radius:8px;padding:10px;font:14px 'JetBrains Mono',monospace"><button class="b" id="licGo">Activer</button></div>
   <div class="small" id="licMsg" style="margin-top:8px"></div>`;
   m.classList.add("on");$("licGo").onclick=()=>activer($("licKey").value.trim());
@@ -930,7 +931,7 @@ async function activer(key){const msg=$("licMsg");key=String(key||"").trim();if(
   let r;try{r=await polar("activate",{key,label:nomAppareil()})}catch(e){msg.innerHTML='<span class="bad">Impossible de joindre le service de vérification. Vérifie ta connexion internet et réessaie.</span>';return}
   if(r.status>=200&&r.status<300&&r.j&&r.j.id){const exp=expireLe(r.j);localStorage.setItem(LSK,JSON.stringify({ok:true,key,activation_id:r.j.id,expire:exp,date:iso(today()),verif:new Date().toISOString()}));ok(`Version complète activée sur cet appareil${exp?` jusqu'au ${fd(new Date(exp))}`:""}. Merci !`);return}
   const portail="Pour l'utiliser ici, libère un ancien appareil depuis ton <b>espace client Polar</b> (lien dans l'e-mail de Polar), puis réessaie.";
-  if(r.status===403){const d=JSON.stringify(r.j||"");msg.innerHTML=/limit/i.test(d)?`<span class="bad">Cette clé est déjà activée sur 3 appareils, le maximum.</span><br>${portail}`:`<span class="bad">Cette clé ne peut pas être activée : elle est déjà utilisée sur 3 appareils, ou elle a été désactivée (par exemple après un remboursement).</span><br>${portail} Besoin d'aide ? Réponds à l'e-mail de Polar.`;return}
+  if(r.status===403){const d=JSON.stringify(r.j||"");msg.innerHTML=/limit/i.test(d)?`<span class="bad">Cette clé est déjà activée sur ${CONFIG.appareilsMax} appareils, le maximum.</span><br>${portail}`:`<span class="bad">Cette clé ne peut pas être activée : elle est déjà utilisée sur ${CONFIG.appareilsMax} appareils, ou elle a été désactivée (par exemple après un remboursement).</span><br>${portail} Besoin d'aide ? Réponds à l'e-mail de Polar.`;return}
   if(r.status===404||r.status===422){msg.innerHTML='<span class="bad">Clé inconnue. Copie-la exactement depuis l\'e-mail de Polar : elle commence par MI-.</span>';return}
   msg.innerHTML='<span class="bad">Le service de vérification ne répond pas pour l\'instant. Réessaie dans quelques minutes.</span>'}
 

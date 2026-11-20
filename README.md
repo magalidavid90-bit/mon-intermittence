@@ -32,7 +32,7 @@ En haut de la section `CONFIGURATION DE LA VENTE` dans `index.html` :
 
 ## Clés de licence (Polar)
 
-- Activation : `POST https://api.polar.sh/v1/customer-portal/license-keys/activate` (`key`, `organization_id`, `label`), 3 appareils maximum par clé.
+- Activation : `POST https://api.polar.sh/v1/customer-portal/license-keys/activate` (`key`, `organization_id`, `label`), 2 appareils maximum par clé (`CONFIG.appareilsMax`, à garder identique à la limite d'activation réglée dans Polar).
 - Revérification au plus une fois par semaine si l'appareil est en ligne (`.../validate` avec `activation_id`). Clé révoquée, expirée ou appareil libéré → retour à la version gratuite. Hors ligne ou erreur réseau : la licence est conservée.
 - Si Polar indique une date d'expiration (`expires_at`), elle est affichée et respectée.
 - Après paiement, Polar renvoie vers `?achat=ok` : l'appli remercie et ouvre directement le champ de saisie de la clé.
