@@ -1,0 +1,1099 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mon Intermittence · le suivi des intermittents du spectacle</title>
+<meta name="description" content="Compteur des 507 heures, date anniversaire, projection et lecture automatique des AEM pour les intermittents du spectacle.">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#121212">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="Intermittence">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;800;900&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#F3EFE8; --card:#FFFFFF; --ink:#141414; --muted:#6E6A64; --line:#E3DDD3;
+  --brand:#C8102E; --brand-dark:#9E0C24; --brand-soft:#FBE4E7;
+  --amber:#B9740E; --amber-soft:#FBF0DC; --teal:#2E7D4F; --teal-soft:#E2F1E7;
+  --red:#C8102E; --red-soft:#FBE4E7; --console:#121212;
+  --r:12px;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--paper);color:var(--ink);font:15px/1.5 Inter,system-ui,sans-serif}
+h1,h2,h3{font-family:"Archivo",sans-serif;margin:0;letter-spacing:-.01em}
+.num,td.n,.mono{font-family:"JetBrains Mono",monospace;font-variant-numeric:tabular-nums}
+header{background:var(--console);color:#F3F1EC;padding:20px 28px 0;border-bottom:3px solid var(--brand)}
+.logo{display:flex;align-items:center;gap:12px}
+.logo .mk{width:42px;height:42px;border-radius:50%;background:var(--brand);display:grid;place-items:center;font:900 20px Archivo;color:#fff;letter-spacing:-.04em}
+.logo .t1{font:800 12px Archivo;letter-spacing:.22em;color:#F3F1EC;text-transform:uppercase}
+.logo .t2{font:800 23px Archivo;letter-spacing:-.01em;line-height:1.1}
+.hero{background:var(--console);color:#F6F3EE;border-radius:18px;padding:26px 28px;position:relative;overflow:hidden}
+.hero:after{content:"";position:absolute;right:-60px;top:-60px;width:220px;height:220px;border-radius:50%;border:28px solid var(--brand);opacity:.18}
+.hero .hello{font:700 15px Archivo;color:#C9C4BC}
+.hero .big{font:800 clamp(22px,3.4vw,32px)/1.15 Archivo;margin:6px 0 18px;max-width:760px;position:relative;z-index:1}
+.hero .big em{font-style:normal;color:#FF5A6E}
+.gauge{height:22px;border-radius:999px;background:#2A2A2A;position:relative;overflow:hidden}
+.gauge .r{position:absolute;left:0;top:0;bottom:0;background:var(--brand);border-radius:999px;z-index:2}
+.gauge .p{position:absolute;left:0;top:0;bottom:0;background:repeating-linear-gradient(45deg,#C8102E 0 6px,#5a0d18 6px 12px);border-radius:999px;z-index:1}
+.gauge .goal{position:absolute;top:-4px;bottom:-4px;width:3px;background:#fff;z-index:3}
+.hstats{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:14px;margin-top:16px;position:relative;z-index:1}
+.hstats div span{display:block;font-size:12px;color:#A9A49C;text-transform:uppercase;letter-spacing:.06em;font-weight:600}
+.hstats div b{font:600 24px "JetBrains Mono",monospace}
+.actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
+details.more{margin-top:16px}
+details.more summary{cursor:pointer;font-weight:600;color:var(--brand);padding:6px 0;list-style:none}
+details.more summary::-webkit-details-marker{display:none}
+details.more summary:before{content:"＋ "}
+details.more[open] summary:before{content:"－ "}
+.onb{background:#fff;border:1px solid var(--line);border-radius:18px;padding:26px 28px;max-width:760px}
+.onb h2{font:800 24px Archivo;margin-bottom:6px}
+.onb .step{font:700 12px Inter;letter-spacing:.08em;text-transform:uppercase;color:var(--brand);margin-bottom:6px}
+.onb .or{display:flex;align-items:center;gap:12px;color:var(--muted);font-size:13px;margin:18px 0}
+.onb .or:before,.onb .or:after{content:"";flex:1;height:1px;background:var(--line)}
+.onb .q{margin:14px 0}
+.onb .q label{display:block;font-weight:600;margin-bottom:6px}
+.onb .q input{border:1px solid var(--line);border-radius:10px;padding:10px 12px;font:15px Inter;width:100%;max-width:260px}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:10px;overflow:hidden;flex-wrap:wrap}
+.seg button{border:0;background:#fff;padding:9px 14px;font:600 13.5px Inter;cursor:pointer;color:var(--ink)}
+.seg button.on{background:var(--ink);color:#fff}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px}
+.tile{background:#fff;border:1px solid var(--line);border-radius:14px;padding:18px;cursor:pointer;text-align:left;font:inherit;color:inherit}
+.tile:hover{border-color:var(--brand)}
+.tile b{font:800 17px Archivo;display:block;margin-bottom:4px}
+.tile span{font-size:13.5px;color:var(--muted)}
+.back{background:none;border:0;color:var(--brand);font:600 14px Inter;cursor:pointer;padding:0;margin-bottom:12px}
+.hrow{display:flex;flex-wrap:wrap;gap:18px;align-items:flex-end;justify-content:space-between;max-width:1180px;margin:0 auto}
+header h1{font-size:26px}
+header .sub{color:#B9B6AE;font-size:13px;margin-top:2px}
+.badges{display:flex;gap:8px;flex-wrap:wrap}
+.badge{border:1px solid #45464C;border-radius:999px;padding:4px 12px;font-size:12.5px;color:#E6E3DC}
+.badge b{color:#FF5A6E}
+nav{max-width:1180px;margin:18px auto 0;display:flex;gap:4px;overflow-x:auto}
+nav button{background:none;border:0;color:#B9B6AE;font:600 14px Inter;padding:10px 14px;border-radius:10px 10px 0 0;cursor:pointer;white-space:nowrap}
+nav button.on{background:var(--paper);color:var(--ink)}
+nav button:hover{color:#fff}nav button.on:hover{color:var(--ink)}
+main{max-width:1180px;margin:0 auto;padding:24px 28px 60px}
+section{display:none} section.on{display:block}
+.grid{display:grid;gap:16px}
+.g4{grid-template-columns:repeat(auto-fit,minmax(220px,1fr))}
+.g2{grid-template-columns:repeat(auto-fit,minmax(340px,1fr))}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:18px 20px}
+.card h2{font-size:17px;margin-bottom:10px}
+.card h3{font-size:14px;margin:14px 0 6px;color:var(--muted);font-family:Inter;font-weight:600;text-transform:uppercase;letter-spacing:.04em}
+.kpi .lab{font-size:12.5px;color:var(--muted);font-weight:500}
+.kpi .val{font:600 28px "JetBrains Mono",monospace;margin:4px 0 2px}
+.kpi .hint{font-size:12.5px;color:var(--muted)}
+.ok{color:var(--teal)} .warn{color:var(--amber)} .bad{color:var(--red)}
+.meter{height:14px;background:#EEE9E0;border-radius:999px;overflow:hidden;position:relative;margin:10px 0 6px}
+.meter i{display:block;height:100%;background:var(--brand);border-radius:999px;transition:width .4s}
+.meter i.full{background:linear-gradient(90deg,var(--teal),#2D8C86)}
+.meter .tick{position:absolute;top:-3px;bottom:-3px;width:2px;background:var(--ink);opacity:.35}
+.note{background:var(--amber-soft);border-radius:10px;padding:10px 14px;font-size:13.5px;margin-top:12px}
+.note.ok{background:var(--teal-soft);color:var(--ink)} .note.bad{background:var(--red-soft);color:var(--ink)}
+.small{font-size:12.5px;color:var(--muted)}
+table{width:100%;border-collapse:collapse;font-size:13.5px}
+th{text-align:left;font-weight:600;color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.03em;border-bottom:1px solid var(--line);padding:8px 8px}
+td{border-bottom:1px solid #F0ECE5;padding:8px 8px;vertical-align:middle}
+td.n,th.n{text-align:right}
+tr:hover td{background:#FBFAF7}
+.tablewrap{overflow-x:auto}
+.pill{display:inline-block;padding:2px 9px;border-radius:999px;font-size:12px;font-weight:600}
+.p-h{background:var(--teal-soft);color:var(--teal)} .p-c{background:var(--amber-soft);color:#8A5A0E}
+.p-a{background:#ECEAF6;color:#4A3F8C} .p-x{background:#EEE;color:#555}
+button.b,label.b{display:inline-flex;align-items:center;gap:6px;background:var(--ink);color:#fff;border:0;border-radius:9px;padding:9px 14px;font:600 13.5px Inter;cursor:pointer}
+button.b.ghost,label.b.ghost{background:transparent;color:var(--ink);border:1px solid var(--line)}
+button.b.amber,button.b.red{background:var(--brand)}
+button.b.amber:hover,button.b.red:hover{background:var(--brand-dark)}
+button.b.light{background:#fff;color:var(--ink)}
+button.link{background:none;border:0;color:var(--teal);cursor:pointer;font:600 13px Inter;padding:2px 4px}
+button.link.del{color:var(--red)}
+.toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:14px}
+.toolbar .sp{flex:1}
+form.f{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px 14px}
+.fld label{display:block;font-size:12.5px;font-weight:600;color:var(--muted);margin-bottom:4px}
+.fld input,.fld select,.fld textarea{width:100%;border:1px solid var(--line);border-radius:8px;padding:8px 10px;font:14px Inter;background:#fff;color:var(--ink)}
+.fld input:focus,.fld select:focus{outline:2px solid var(--brand);outline-offset:-1px}
+.fld.wide{grid-column:1/-1}
+.chk{display:flex;gap:8px;align-items:center;font-size:13.5px}
+.modal{position:fixed;inset:0;background:rgba(20,20,22,.45);display:none;align-items:flex-start;justify-content:center;padding:6vh 16px;z-index:20;overflow:auto}
+.modal.on{display:flex}
+.modal .card{max-width:720px;width:100%}
+.split{display:flex;justify-content:space-between;gap:10px;align-items:center}
+.formula{font:13px "JetBrains Mono",monospace;background:#F7F5F0;border-radius:8px;padding:10px 12px;white-space:pre-wrap;line-height:1.6}
+.breakdown td{padding:6px 8px}
+.status{font-size:12px;color:#B9B6AE}
+.empty{padding:30px;text-align:center;color:var(--muted)}
+input.inl{width:100px;border:1px solid var(--line);border-radius:6px;padding:4px 6px;font:13px "JetBrains Mono",monospace;text-align:right}
+.tag{font-size:11px;color:var(--muted)}
+.scan{border:2px dashed #CFC6B6;background:#FFFDF8;border-radius:16px;padding:22px;display:flex;gap:18px;align-items:center;flex-wrap:wrap;cursor:pointer;transition:.15s}
+.scan:hover,.scan.drag{border-color:var(--brand);background:var(--brand-soft)}
+.scan .ico{width:58px;height:58px;border-radius:50%;background:var(--brand);display:grid;place-items:center;flex:none}
+.scan .ico svg{width:28px;height:28px;stroke:#fff}
+.scan .txt{flex:1;min-width:220px}
+.scan .txt b{font:600 18px "Archivo",sans-serif;display:block}
+.scan .txt span{font-size:13.5px;color:var(--muted)}
+.scanlog{margin-top:10px;display:grid;gap:8px}
+.slog{background:#fff;border:1px solid var(--line);border-radius:10px;padding:10px 14px;font-size:13.5px;display:flex;gap:12px;align-items:flex-start}
+.slog .st{flex:none;width:22px;text-align:center}
+.slog .bd{flex:1}
+.slog ul{margin:4px 0 0;padding-left:18px}
+.spin{display:inline-block;width:14px;height:14px;border:2px solid var(--line);border-top-color:var(--brand);border-radius:50%;animation:sp 0.8s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
+.p-v{background:var(--red-soft);color:var(--red)}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.chip{background:var(--brand-soft);color:var(--brand-dark);border-radius:999px;padding:3px 6px 3px 11px;font:600 12.5px Inter;display:inline-flex;gap:4px;align-items:center}
+.chip button{border:0;background:none;cursor:pointer;color:var(--brand-dark);font-size:14px;line-height:1}
+.p-p{background:#fff;color:var(--brand);border:1px dashed var(--brand)}
+.chartwrap{position:relative}
+.chartwrap svg{width:100%;height:auto;display:block}
+.tip{position:absolute;pointer-events:none;background:var(--console);color:#fff;border-radius:8px;padding:8px 10px;font-size:12.5px;line-height:1.45;white-space:nowrap;display:none;z-index:3}
+.legend{display:flex;gap:16px;flex-wrap:wrap;font-size:12.5px;color:var(--muted);margin:2px 0 8px}
+.legend i{display:inline-block;width:22px;height:0;border-top:2px solid #C8102E;vertical-align:middle;margin-right:6px}
+.legend i.d{border-top-style:dashed}
+.legend i.r{border-top:2px dashed #6B6B73}
+tr.now td{background:#FDF1F2}
+.show-m{display:none}
+@media (max-width:640px){header,main{padding-left:14px;padding-right:14px}.kpi .val{font-size:23px}.hero{padding:20px}.logo .t2{font-size:19px}.hide-m{display:none}.show-m{display:block!important}nav button{padding:10px 10px;font-size:13.5px}}
+</style>
+</head>
+<body>
+<header>
+  <div class="hrow">
+    <div class="logo"><div class="mk">M</div><div><div class="t1">Intermittents du spectacle</div><div class="t2" id="hName">Mon Intermittence</div></div></div>
+    <div class="badges" id="hBadges"></div>
+  </div>
+  <nav id="tabs">
+    <button data-t="dash" class="on">Accueil</button>
+    <button data-t="projection">Mes heures</button>
+    <button data-t="contrats">Mes contrats</button>
+    <button data-t="plus">Plus</button>
+  </nav>
+</header>
+
+<main>
+<!-- DASHBOARD -->
+<section id="s-dash" class="on">
+  <div id="hero"></div>
+  <div id="onb"></div>
+  <div id="dashRest">
+  <div class="scanbox" style="margin:16px 0"></div>
+  <div class="grid g2">
+    <div class="card" id="cAnniv"></div>
+    <div class="card" id="cAJ"></div>
+  </div>
+  <div class="card" id="cTodo" style="margin-top:16px"></div>
+  <details class="more card" id="cDetail" style="margin-top:16px"><summary>Voir le détail du calcul des 507 h</summary><div id="c507"></div></details>
+  </div>
+</section>
+
+<!-- PLUS -->
+<section id="s-plus">
+  <div class="tiles">
+    <button class="tile" onclick="go('mois')"><b>💶 Mon argent, mois par mois <span class="lock" style="font-size:13px"></span></b><span>Allocation estimée et versée, salaires, franchises et plafond.</span></button>
+    <button class="tile" onclick="go('conges')"><b>🏖️ Mes congés spectacles <span class="lock" style="font-size:13px"></span></b><span>Indemnité Audiens estimée, à demander chaque année avant le 31 mars.</span></button>
+    <button class="tile" onclick="go('employeurs')"><b>🎤 Mes employeurs <span class="lock" style="font-size:13px"></span></b><span>Heures, salaires et taux horaire par artiste ou employeur.</span></button>
+    <button class="tile" onclick="go('simu')"><b>🔮 Et si… <span class="lock" style="font-size:13px"></span></b><span>Simuler des heures en plus et un mois de travail.</span></button>
+    <button class="tile" onclick="openPay()" id="tilePro"><b>⭐ Version complète</b><span id="tileProTxt"></span></button>
+    <button class="tile" onclick="aideInstall()"><b>📲 Installer l'appli</b><span>Une icône sur ton écran d'accueil, qui marche même sans réseau.</span></button>
+    <button class="tile" onclick="go('params')"><b>⚙️ Réglages & règles</b><span>Date anniversaire, allocation, barèmes, sauvegarde, règles France Travail.</span></button>
+  </div>
+</section>
+
+<!-- CONTRATS -->
+<section id="s-contrats">
+  <div class="scanbox" style="margin-bottom:16px"></div>
+  <div class="toolbar">
+    <button class="b ghost" id="addC">+ Saisie manuelle</button>
+    <select id="fYear" class="fld" style="border:1px solid var(--line);border-radius:8px;padding:8px;max-width:100%"></select>
+    <select id="fEmp" style="border:1px solid var(--line);border-radius:8px;padding:8px"></select>
+    <span class="sp"></span>
+    <span class="small" id="cCount"></span>
+  </div>
+  <div class="grid g4" id="perTiles" style="margin-bottom:14px"></div>
+  <div class="card tablewrap"><table id="tC"></table></div>
+  <div class="card" style="margin-top:16px" id="docsCard"></div>
+  <p class="small">Un contrat à cheval sur deux périodes est réparti au prorata des jours. Technicien : seules les heures réelles comptent (max 208 h par mois, 250 h avec plusieurs employeurs). Artiste : 1 cachet = 12 h.</p>
+</section>
+
+<!-- EMPLOYEURS -->
+<section id="s-employeurs">
+  <button class="back" onclick="go('plus')">← Plus</button>
+  <p class="small" id="empPer" style="margin-top:0"></p>
+  <div class="card tablewrap"><table id="tE"></table></div>
+  <p class="small">AEM = attestation employeur mensuelle, que l'employeur transmet à France Travail. Si elle manque, les heures ne sont pas prises en compte : à relancer.</p>
+</section>
+
+<!-- PROJECTION -->
+<section id="s-projection">
+  <div class="grid g4" id="projKpis"></div>
+  <div class="card" style="margin-top:16px">
+    <div class="split"><h2>Mes heures sur la période : réalisé et prévu</h2><span class="small" id="projRange"></span></div>
+    <div class="legend"><span><i></i>Réalisé</span><span><i class="d"></i>Avec les dates prévues</span><span><i class="r"></i>Seuil 507 h</span></div>
+    <div class="chartwrap" id="projChart"><div class="tip" id="projTip"></div></div>
+    <p class="small" style="margin-bottom:0">Cumul des heures depuis le début de la période qui compte pour la prochaine date anniversaire. Les heures déjà utilisées pour un renouvellement ne sont pas recomptées.</p>
+  </div>
+  <div class="grid g2" style="margin-top:16px">
+    <div class="card">
+      <h2>Ajouter des dates prévues</h2>
+      <p class="small" style="margin-top:0">Choisis l'artiste ou l'employeur, clique sur les dates : les heures et le salaire sont repris de ses derniers contrats avec lui.</p>
+      <form class="f" onsubmit="return false">
+        <div class="fld wide"><label>Artiste / employeur</label><input id="plEmp" list="empList" placeholder="ex. La Cigale"></div>
+        <div class="fld"><label>Ajouter une date</label><input type="date" id="plDate"></div>
+        <div class="fld"><label id="plQLab">Heures par date</label><input type="number" id="plQ" min="0" step="0.5" value="8"></div>
+      </form>
+      <div class="chips" id="plChips"></div>
+      <div class="small" id="plEst" style="margin-top:10px"></div>
+      <div class="toolbar" style="margin:12px 0 0"><button class="b" id="plAdd">Ajouter les dates</button></div>
+    </div>
+    <div class="card">
+      <h2>Mois par mois (heures)</h2>
+      <div class="tablewrap"><table id="tP"></table></div>
+    </div>
+  </div>
+</section>
+
+<!-- CONGES -->
+<section id="s-conges">
+  <button class="back" onclick="go('plus')">← Plus</button>
+  <div id="congesBody"></div>
+</section>
+
+<!-- MOIS -->
+<section id="s-mois">
+  <button class="back" onclick="go('plus')">← Plus</button>
+  <div class="card">
+    <div class="split"><h2>Indemnisation estimée, mois par mois</h2><span class="small" id="moisRange"></span></div>
+    <p class="small" style="margin-top:0">Période d'indemnisation en cours (de l'ouverture des droits à la date anniversaire). Saisis l'ARE réellement versée pour comparer avec l'estimation.</p>
+    <div class="tablewrap"><table id="tM"></table></div>
+    <div class="note" id="moisNote"></div>
+  </div>
+</section>
+
+<!-- SIMU -->
+<section id="s-simu">
+  <button class="back" onclick="go('plus')">← Plus</button>
+  <div class="grid g2">
+    <div class="card">
+      <h2>Et si…</h2>
+      <p class="small" style="margin-top:0">Ajoute des contrats hypothétiques d'ici la date anniversaire pour voir l'effet sur le renouvellement et sur la future allocation.</p>
+      <form class="f" id="simForm" onsubmit="return false">
+        <div class="fld"><label>Heures en plus</label><input type="number" id="simH" min="0" step="1" value="0"></div>
+        <div class="fld"><label>Cachets en plus</label><input type="number" id="simCa" min="0" step="1" value="0"></div>
+        <div class="fld"><label>Salaire brut en plus (€)</label><input type="number" id="simS" min="0" step="10" value="0"></div>
+        <div class="fld"><label>Date du dernier contrat</label><input type="date" id="simD"></div>
+      </form>
+    </div>
+    <div class="card" id="simOut"></div>
+  </div>
+  <div class="card" style="margin-top:16px">
+    <h2>Simulateur d'un mois</h2>
+    <p class="small" style="margin-top:0">Combien d'ARE pour un mois donné, selon les heures travaillées et le salaire du mois.</p>
+    <form class="f" onsubmit="return false">
+      <div class="fld"><label>Heures travaillées dans le mois</label><input type="number" id="mH" value="40" min="0"></div>
+      <div class="fld"><label>Salaire brut du mois (€)</label><input type="number" id="mS" value="900" min="0"></div>
+      <div class="fld"><label>Jours dans le mois</label><select id="mJ"><option>28</option><option>29</option><option selected>30</option><option>31</option></select></div>
+      <div class="fld"><label>AJ utilisée (€)</label><input type="number" id="mAJ" step="0.01"></div>
+    </form>
+    <div id="mOut" style="margin-top:12px"></div>
+  </div>
+</section>
+
+<!-- PARAMS -->
+<section id="s-params">
+  <button class="back" onclick="go('plus')">← Plus</button>
+  <div class="grid g2">
+    <div class="card">
+      <h2>Profil</h2>
+      <form class="f" id="pForm" onsubmit="return false">
+        <div class="fld"><label>Nom</label><input data-p="nom"></div>
+        <div class="fld"><label>Annexe</label><select data-p="annexe"><option value="8">Annexe 8 — technicien</option><option value="10">Annexe 10 — artiste</option></select></div>
+        <div class="fld"><label>Fin du contrat qui a ouvert les droits</label><input type="date" data-p="finOuverture"></div>
+        <div class="fld"><label>Date anniversaire (si différente)</label><input type="date" data-p="dateAnnivForcee"></div>
+        <div class="fld"><label>Début d'indemnisation</label><input type="date" data-p="debutIndem"></div>
+        <div class="fld"><label>AJ notifiée par France Travail (€)</label><input type="number" step="0.01" data-p="ajNotifiee"></div>
+        <div class="fld"><label>Ouvertures de droits intermittent sur 10 ans</label><input type="number" min="0" data-p="nbOuvertures"></div>
+        <div class="fld" style="align-self:end"><label class="chk"><input type="checkbox" data-p="plus50" style="width:auto"> 50 ans ou plus</label></div>
+      </form>
+      <p class="small">La notification France Travail indique la date anniversaire et l'AJ : reporte-les ici pour que les estimations collent au réel.</p>
+    </div>
+    <div class="card">
+      <h2>Barèmes</h2>
+      <form class="f" id="bForm" onsubmit="return false">
+        <div class="fld"><label>AJ minimale (paramètre)</label><input type="number" step="0.01" data-b="ajMin"></div>
+        <div class="fld"><label>Plancher AJ annexe 8</label><input type="number" step="0.01" data-b="plancher8"></div>
+        <div class="fld"><label>Plancher AJ annexe 10</label><input type="number" step="0.01" data-b="plancher10"></div>
+        <div class="fld"><label>SMIC horaire brut</label><input type="number" step="0.01" data-b="smicH"></div>
+        <div class="fld"><label>SMIC mensuel brut</label><input type="number" step="0.01" data-b="smicM"></div>
+        <div class="fld"><label>Plafond mensuel SS (PMSS)</label><input type="number" step="1" data-b="pmss"></div>
+        <div class="fld"><label>Plafond de cumul (× PMSS)</label><input type="number" step="0.01" data-b="cumulCoef"></div>
+        <div class="fld"><label>Heures par cachet (artistes)</label><input type="number" step="1" data-b="hCachet"></div>
+      </form>
+      <p class="small">Valeurs vérifiées en novembre 2026. À contrôler chaque 1er janvier (SMIC, PMSS) et chaque 1er juillet (revalorisation des allocations).</p>
+    </div>
+  </div>
+  <div class="card" style="margin-top:16px">
+    <h2>Sauvegarde</h2>
+    <p class="small" id="saveInfo" style="margin-top:0"></p>
+    <div class="toolbar">
+      <button class="b ghost" id="expJson">Exporter (JSON)</button>
+      <button class="b ghost" id="expCsv">Exporter les contrats (CSV)</button>
+      <label class="b ghost">Importer un JSON<input type="file" id="impJson" accept=".json,application/json" hidden></label>
+      <button class="b ghost" id="loadDemo">Charger un exemple</button>
+      <button class="b ghost" id="wipe" style="color:var(--red)">Tout effacer</button>
+    </div>
+    <div id="copyBox"></div>
+  </div>
+  <div class="card" style="margin-top:16px">
+    <h2>Les règles utilisées</h2>
+    <div id="rules"></div>
+  </div>
+</section>
+  <footer style="margin-top:40px;padding-top:18px;border-top:1px solid var(--line);font-size:12.5px;color:var(--muted);line-height:1.7">
+    Mon Intermittence donne des <b>estimations</b> à partir des règles publiques de l'assurance chômage (annexes 8 et 10). Elles ne remplacent pas les décisions de France Travail.
+    Tes données restent sur ton appareil : rien n'est envoyé sur un serveur.<br>
+    <a href="mentions-legales.html">Mentions légales</a> · <a href="cgv.html">Conditions de vente</a> · <a href="confidentialite.html">Confidentialité</a>
+  </footer>
+</main>
+<div class="modal" id="payMod" onclick="if(event.target===this)this.classList.remove('on')"><div class="card"></div></div>
+
+<!-- modal contrat -->
+<div class="modal" id="mod"><div class="card">
+  <div class="split"><h2 id="modT">Contrat</h2><button class="link" id="modX">Fermer</button></div>
+  <form class="f" id="cForm" style="margin-top:12px" onsubmit="return false">
+    <div class="fld wide"><label>Employeur</label><input name="employeur" list="empList" required placeholder="ex. Studio Concorde"><datalist id="empList"></datalist></div>
+    <div class="fld"><label>Type</label><select name="type">
+      <option value="heures">Heures (technicien)</option>
+      <option value="cachets">Cachets</option>
+      <option value="enseignement">Heures d'enseignement (établissement agréé)</option>
+      <option value="formation">Heures de formation</option>
+      <option value="assimile">Jours assimilés (maladie, maternité, AT) — 5 h/jour</option>
+    </select></div>
+    <div class="fld"><label id="qLab">Nombre d'heures</label><input name="quantite" type="number" step="0.5" min="0" required></div>
+    <div class="fld"><label>Statut</label><select name="statut"><option value="">Automatique (selon la date)</option><option value="reel">Réalisé</option><option value="prevu">Prévu</option></select></div>
+    <div class="fld"><label>Début</label><input name="debut" type="date" required></div>
+    <div class="fld"><label>Fin</label><input name="fin" type="date" required></div>
+    <div class="fld"><label>Salaire brut (€)</label><input name="brut" type="number" step="0.01" min="0"></div>
+    <div class="fld"><label>Net versé (€)</label><input name="net" type="number" step="0.01" min="0"></div>
+    <div class="fld"><label>Poste / projet</label><input name="poste" placeholder="ex. ingé son, mixage album"></div>
+    <div class="fld" style="align-self:end"><label class="chk"><input type="checkbox" name="aem" style="width:auto"> AEM reçue / transmise</label></div>
+    <div class="fld" style="align-self:end"><label class="chk"><input type="checkbox" name="paye" style="width:auto"> Salaire encaissé</label></div>
+    <div class="fld wide"><label>Note</label><input name="note"></div>
+  </form>
+  <div class="toolbar" style="margin:16px 0 0"><button class="b" id="cSave">Enregistrer</button><span class="sp"></span><span class="small" id="cErr" style="color:var(--red)"></span></div>
+</div></div>
+
+<script>
+/* ============ ÉTAT ============ */
+const BAREME_DEFAUT={ajMin:31.36,plancher8:38,plancher10:44,smicH:12.31,smicM:1867.02,pmss:4005,cumulCoef:1.18,hCachet:12};
+const VIDE=()=>({version:1,profil:{nom:"",annexe:"8",finOuverture:"",dateAnnivForcee:"",debutIndem:"",ajNotifiee:"",nbOuvertures:"",plus50:false},bareme:{...BAREME_DEFAUT},contrats:[],areRecue:{},documents:[],conges:{}});
+let S=VIDE();
+let store={mode:"local",ref:null,writing:false,pending:false,canWrite:true};
+
+/* ============ DATES ============ */
+const D=s=>s?new Date(s+"T00:00:00Z"):null;
+const iso=d=>d.toISOString().slice(0,10);
+const today=()=>{const n=new Date();return new Date(Date.UTC(n.getFullYear(),n.getMonth(),n.getDate()))};
+const addDays=(d,n)=>new Date(d.getTime()+n*864e5);
+function addMonths(d,n){const y=d.getUTCFullYear(),m=d.getUTCMonth()+n,day=d.getUTCDate();const last=new Date(Date.UTC(y,m+1,0)).getUTCDate();return new Date(Date.UTC(y,m,Math.min(day,last)))}
+const daysIncl=(a,b)=>Math.round((b-a)/864e5)+1;
+const fd=d=>d?d.toLocaleDateString("fr-FR",{timeZone:"UTC",day:"2-digit",month:"short",year:"numeric"}):"—";
+const MOIS=["janv.","févr.","mars","avr.","mai","juin","juil.","août","sept.","oct.","nov.","déc."];
+const eur=v=>(v==null||isNaN(v))?"—":v.toLocaleString("fr-FR",{style:"currency",currency:"EUR",maximumFractionDigits:2});
+const eur0=v=>(v==null||isNaN(v))?"—":v.toLocaleString("fr-FR",{style:"currency",currency:"EUR",maximumFractionDigits:0});
+const h1=v=>(Math.round(v*10)/10).toLocaleString("fr-FR")+" h";
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const num=v=>{const x=parseFloat(String(v).replace(",","."));return isNaN(x)?0:x};
+
+/* ============ MOTEUR ============ */
+const B=()=>({...BAREME_DEFAUT,...S.bareme});
+const annexe=()=>String(S.profil.annexe)==="10"?10:8;
+function heuresBrutes(c){const q=num(c.quantite);if(c.type==="cachets")return q*num(B().hCachet);if(c.type==="assimile")return q*5;return q}
+function part(c,from,to){const a=D(c.debut),b=D(c.fin);if(!a||!b||b<a)return 0;const s=a>from?a:from,e=b<to?b:to;if(e<s)return 0;return daysIncl(s,e)/daysIncl(a,b)}
+
+/* Statistiques sur une période [from,to] */
+const statutOf=c=>c.statut||(D(c.fin)>today()?"prevu":"reel");
+function stats(from,to,extra=[],mode="tout"){
+  let spect=0,ens=0,form=0,ass=0,sal=0,salTot=0,cach=0,nb=0;const mois={};
+  for(const c of [...S.contrats,...extra]){if(mode==="reel"&&statutOf(c)==="prevu")continue;const r=part(c,from,to);if(!r)continue;nb++;
+    const h=heuresBrutes(c)*r,b=num(c.brut)*r;salTot+=b;
+    if(c.type==="heures"||c.type==="cachets"){sal+=b;if(c.type==="cachets")cach+=num(c.quantite)*r;
+      // répartition par mois civil pour appliquer le plafond mensuel
+      const a=D(c.debut),z=D(c.fin),tot=daysIncl(a,z),s0=a>from?a:from,e0=z<to?z:to;let m=new Date(Date.UTC(s0.getUTCFullYear(),s0.getUTCMonth(),1));
+      while(m<=e0){const me=new Date(Date.UTC(m.getUTCFullYear(),m.getUTCMonth()+1,0));const ps=m>s0?m:s0,pe=me<e0?me:e0;
+        const k=iso(m).slice(0,7);const bk=mois[k]||(mois[k]={h:0,e:new Set()});bk.h+=heuresBrutes(c)*daysIncl(ps,pe)/tot;bk.e.add(normE(c.employeur));
+        m=new Date(Date.UTC(m.getUTCFullYear(),m.getUTCMonth()+1,1))}}
+    else if(c.type==="enseignement")ens+=h; else if(c.type==="formation")form+=h; else ass+=h;}
+  let ecrete=0;for(const k in mois){const bk=mois[k];const cap=annexe()===8?(bk.e.size>1?250:208):28*num(B().hCachet);const v=Math.min(bk.h,cap);ecrete+=bk.h-v;spect+=v}
+  const capEns=S.profil.plus50?120:70;
+  const ensR=Math.min(ens,capEns);
+  const formR=Math.min(form,Math.max(0,338-ensR));
+  const total=spect+ensR+formR+ass;
+  return {spect,ens,ensR,form,formR,ass,total,sal,salTot,cach,nb,capEns,ecrete};
+}
+/* Allocation journalière A+B+C */
+function calcAJ(SR,NHT){
+  const b=B(),m=b.ajMin,a8=annexe()===8;
+  const seuilS=a8?14400:13700,cS=a8?0.42:0.36,seuilH=a8?720:690,cC=a8?0.40:0.70,pl=a8?b.plancher8:b.plancher10;
+  const A=m*(cS*Math.min(SR,seuilS)+0.05*Math.max(SR-seuilS,0))/5000;
+  const Bp=m*(0.26*Math.min(NHT,seuilH)+0.08*Math.max(NHT-seuilH,0))/507;
+  const C=m*cC;const brut=A+Bp+C;
+  return {A,B:Bp,C,brut,plancher:pl,aj:Math.max(brut,pl),auPlancher:brut<pl,seuilS,seuilH,cS,cC};
+}
+function franchises(SR,salTot,NHT){
+  const b=B(),div=annexe()===8?8:10;
+  if(NHT<=0)return {cp:0,cpMois:0,sal:0,salMois:0,sjm:0,jt:0};
+  const jt=NHT/div;const sjm=SR/jt;
+  const cp=Math.min(30,Math.floor(jt*2.5/24));const cpMois=cp>24?3:2;
+  const smicJ=b.smicH*5; // SMIC hebdo 35 h / 7 jours calendaires
+  const sal=Math.max(0,Math.round((salTot/b.smicM)*(sjm/(3*smicJ))-27));
+  return {cp,cpMois,sal,salMois:Math.ceil(sal/8),sjm,jt,smicJ};
+}
+/* Jours non indemnisables et ARE d'un mois */
+function moisARE(heures,salaire,jours,aj){
+  const a8=annexe()===8,div=a8?8:10,coef=a8?1.4:1.3,seuil=a8?26:27;
+  const jTrav=heures/div;
+  if(jTrav>=seuil)return {jni:jours,ind:0,are:0,raison:"seuil",jTrav};
+  const jni=Math.min(jours,Math.floor(jTrav*coef));
+  let ind=jours-jni;let raison="";
+  const plaf=B().pmss*B().cumulCoef;
+  if(salaire+ind*aj>plaf){ind=Math.max(0,Math.floor((plaf-salaire)/aj));raison="plafond"}
+  return {jni,ind,are:ind*aj,raison,jTrav,plaf};
+}
+/* Dates clés */
+function dates(){
+  const p=S.profil;const fo=D(p.finOuverture);
+  let da=D(p.dateAnnivForcee)||(fo?addMonths(fo,12):null);
+  const deb=D(p.debutIndem)||(fo?addDays(fo,1):null);
+  return {fo,da,deb};
+}
+function lastEndBefore(lim){let best=null;for(const c of S.contrats){if(c.type!=="heures"&&c.type!=="cachets")continue;const f=D(c.fin);if(f&&f<=lim&&(!best||f>best))best=f}return best}
+function fenetre(fin){return {from:addDays(addMonths(fin,-12),1),to:fin}}
+// découpage en périodes d'intermittence : précédente / retenue pour la date anniversaire / suivante
+function periodes(){const {fo,da}=dates();const t=today();const L=[];
+  if(!da)return [{k:"all",lab:"Tous les contrats",from:null,to:null}];
+  const w=fenetreDA(da);const to=w.le?w.to:da;
+  L.push({k:"cur",lab:`${da<t?"Période retenue":"Période en cours"} · ${fd(w.from)} → ${fd(to)}`,court:da<t?"Période retenue":"Période en cours",from:w.from,to});
+  L.push({k:"next",lab:`Période suivante · après le ${fd(to)}`,court:"Période suivante",from:addDays(to,1),to:null});
+  L.push({k:"prev",lab:`Période précédente · jusqu'au ${fd(addDays(w.from,-1))} (déjà utilisée)`,court:"Période précédente",from:null,to:addDays(w.from,-1)});
+  return L}
+const inPer=(c,pr)=>{if(!pr||pr.k==="all")return true;const f=D(c.fin);return (!pr.from||f>=pr.from)&&(!pr.to||f<=pr.to)};
+let perSel="cur";
+function perCourante(){const L=periodes();return L.find(x=>x.k===perSel)||L[0]}
+// période examinée à la date anniversaire : 12 mois avant le dernier contrat, sans reprendre les heures ayant servi à l'ouverture précédente
+function fenetreDA(ref){let le=lastEndBefore(ref);const w=le?fenetre(le):fenetre(ref);const fo=D(S.profil.finOuverture);if(fo&&w.from<=fo&&fo<w.to)w.from=addDays(fo,1);if(fo&&le&&w.to<=fo){w.from=addDays(fo,1);w.to=ref;le=null}return {...w,le}}
+function ajCourante(){const n=num(S.profil.ajNotifiee);if(n>0)return {aj:n,src:"notifiée"};const {fo}=dates();if(fo){const w=fenetre(fo);const st=stats(w.from,w.to);if(st.total>0)return {aj:calcAJ(st.sal,st.total).aj,src:"estimée"}}return {aj:null,src:""}}
+
+/* ============ RENDU ============ */
+const $=id=>document.getElementById(id);
+function renderHeader(){
+  const {da}=dates();const t=today();
+  let b="";if(da){const j=Math.round((da-t)/864e5);b+=`<span class="badge">Date anniversaire <b>${fd(da)}</b></span>`}
+  b+=isPro()?`<span class="badge hide-m">⭐ Version complète</span>`:`<button class="badge" style="background:none;cursor:pointer;font:inherit;color:#E6E3DC" onclick="openPay()">⭐ Version complète</button>`;
+  if(!estInstallee())b+=`<button class="badge" style="background:none;cursor:pointer;font:inherit;color:#E6E3DC" onclick="aideInstall()">📲 Installer</button>`;
+  b+=`<span class="badge status hide-m" id="saveBadge">Enregistré sur cet appareil</span>`;
+  $("hBadges").innerHTML=b;
+}
+function kpi(lab,val,hint,cls=""){return `<div class="card kpi"><div class="lab">${lab}</div><div class="val ${cls}">${val}</div><div class="hint">${hint}</div></div>`}
+
+let onbTmp={annexe:"8",ouv:""};
+function needOnb(){return !S.demo&&!S.onboarded&&!S.profil.finOuverture&&!S.profil.dateAnnivForcee&&!S.contrats.length}
+function renderOnb(){
+  const on=needOnb();$("onb").style.display=on?"":"none";$("dashRest").style.display=on?"none":"";if(!on)return false;
+  const prenom=(S.profil.nom||"").split(/[\s(]/)[0]||"";
+  $("hero").innerHTML="";
+  $("onb").innerHTML=`<div class="onb"><div class="step">Bienvenue sur Mon Intermittence</div><h2>Ton suivi d'intermittence, réglé en 1 minute.</h2>
+  <p class="small" style="margin-top:0">Compteur des 507 h, date anniversaire, projection avec tes dates prévues, lecture automatique de tes AEM. Tes données restent sur ton appareil.</p>
+  <div class="q"><label>Ton prénom (facultatif)</label><input id="obNom" placeholder="ex. Camille" value="${esc(S.profil.nom||"")}"></div>
+  <div class="q"><label>1. Ta prochaine date anniversaire</label><input type="date" id="obDA"><div class="small">Elle est sur ta notification : c'est la date de fin de tes droits actuels.</div></div>
+  <div class="q"><label>2. Ton allocation journalière actuelle (brute)</label><input type="number" step="0.01" id="obAJ" placeholder="ex. 62,40" value="${S.profil.ajNotifiee||""}"><div class="small">Sur ta notification ou ton attestation mensuelle. Laisse vide si tu ne sais pas.</div></div>
+  <div class="q"><label>3. Tu es déclaré comme…</label><div class="seg" id="obAnx"><button data-v="8" class="${onbTmp.annexe==="8"?"on":""}">Technicien (annexe 8)</button><button data-v="10" class="${onbTmp.annexe==="10"?"on":""}">Artiste (annexe 10)</button></div></div>
+  <div class="q"><label>Bonus : combien de fois as-tu ouvert des droits intermittent ces 10 dernières années ?</label><div class="seg" id="obOuv"><button data-v="2" class="${onbTmp.ouv==="2"?"on":""}">Moins de 5</button><button data-v="5" class="${onbTmp.ouv==="5"?"on":""}">5 ou plus</button><button data-v="" class="${onbTmp.ouv===""?"on":""}">Je ne sais pas</button></div><div class="small">Sert à savoir si tu as droit à la clause de rattrapage si un jour tu n'atteins pas les 507 h.</div></div>
+  <div class="actions"><button class="b" id="obGo">C'est parti</button><button class="b ghost" id="obSkip">Plus tard</button></div>
+  <div class="small bad" id="obErr" style="margin-top:8px"></div>
+  <div class="or">ou, si tu as ta notification en PDF</div>
+  <button class="b ghost" onclick="fileIn.click()">📄 Envoyer ma notification France Travail (PDF)</button>
+  <div id="onbLogs" class="scanlog"></div>
+  ${S.profil.ajNotifiee&&!S.profil.dateAnnivForcee&&!S.profil.finOuverture?`<div class="note">Document lu ✅ Il manque encore ta <b>date anniversaire</b> : indique-la au-dessus.</div>`:""}
+  <p class="small" style="margin-bottom:0">Ensuite, ajoute tes AEM en PDF depuis ton dernier renouvellement : ce sont ces heures qui comptent pour le prochain.</p></div>`;
+  $("obAnx").querySelectorAll("button").forEach(b=>b.onclick=()=>{onbTmp.annexe=b.dataset.v;renderOnb()});
+  $("obOuv").querySelectorAll("button").forEach(b=>b.onclick=()=>{onbTmp.ouv=b.dataset.v;renderOnb()});
+  $("obGo").onclick=()=>{const v=$("obDA").value;S.profil.nom=($("obNom").value||"").trim();if(!v){$("obErr").textContent="Indique au moins ta date anniversaire (elle est sur ta notification France Travail), ou envoie ta notification en PDF.";return}
+    const da=D(v);const fo=addMonths(da,-12);S.profil.finOuverture=iso(fo);S.profil.dateAnnivForcee=iso(addMonths(fo,12))===v?"":v;
+    const aj=num($("obAJ").value);if(aj>0)S.profil.ajNotifiee=aj;S.profil.annexe=onbTmp.annexe;if(onbTmp.ouv)S.profil.nbOuvertures=num(onbTmp.ouv);
+    S.onboarded=true;save();renderAll();window.scrollTo(0,0)};
+  $("obSkip").onclick=()=>{S.onboarded=true;save();renderAll()};
+  renderScan();return true}
+function renderDash(){
+  if(renderOnb())return;
+  const t=today();const {fo,da,deb}=dates();
+  const prenom=(S.profil.nom||"").split(/[\s(]/)[0]||"";
+  const ref=da||t;const wDA=fenetreDA(ref);const le=wDA.le;
+  const sDA=stats(wDA.from,wDA.to),sDAr=stats(wDA.from,wDA.to,[],"reel");const prevuH=Math.max(0,sDA.total-sDAr.total);
+  const ajc=ajCourante();const ajNext=calcAJ(sDA.sal,sDA.total);const cross=prevuH>0?dateAtteinte():null;
+  const manque=Math.max(0,507-sDA.total);
+  // HERO
+  let big,empty=!S.contrats.length&&!fo;
+  if(empty)big=`Ajoute tes <em>AEM en PDF</em> depuis ton dernier renouvellement. L'outil fait le reste.`;
+  else if(!S.contrats.length)big=`C'est réglé ✅ Maintenant, ajoute tes <em>AEM en PDF</em> depuis ton renouvellement (bouton juste en dessous).`;
+  else if(sDAr.total>=507)big=`Tes 507 heures sont faites ✅<br>Le renouvellement${da?` du <em>${fd(da)}</em>`:""} est assuré.`;
+  else if(sDA.total>=507)big=`Avec tes dates prévues, tu passes les 507 h ${cross?`le <em>${fd(cross)}</em>`:"avant ta date anniversaire"}.`;
+  else big=`Il te manque <em>${h1(manque)}</em>${da&&da>t?` d'ici le ${fd(da)}`:""}${prevuH>0?", en comptant tes dates prévues":""}.`;
+  const pr=Math.min(100,sDAr.total/507*100),pt=Math.min(100,sDA.total/507*100);
+  let roll="";
+  if(da&&da<t){const lo=lastEndBefore(da);const wo=lo?fenetre(lo):fenetre(da);const so=stats(wo.from,wo.to,[],"reel");
+    roll=so.total>=507?`<div class="note ok" style="margin:0 0 12px"><b>Renouvellement en cours ✅ Avec ${h1(so.total)} retenues au ${fd(da)}, tes 507 h sont atteintes.</b><br>Nouvelle date anniversaire probable : <b>${fd(addMonths(lo,12))}</b> (12 mois après ton dernier contrat retenu). Dès que tu reçois l'attestation France Travail, envoie-la : la date et l'allocation exactes se mettront à jour. En attendant, tu peux déjà passer à ta nouvelle période pour suivre tes nouvelles heures.<div class="actions"><button class="b red" onclick="nouvellePeriode('${iso(lo)}')">Passer à ma nouvelle période</button><button class="b ghost" onclick="fileIn.click()">Envoyer ma nouvelle notification</button></div></div>`
+    :`<div class="note bad" style="margin:0 0 12px"><b>Ta date anniversaire du ${fd(da)} est passée, avec ${h1(so.total)} retenues.</b> Si France Travail t'a envoyé une nouvelle notification, envoie-la en PDF pour mettre l'outil à jour.</div>`}
+  $("hero").innerHTML=roll+(S.demo?`<div class="note bad" style="margin:0 0 12px;display:flex;gap:10px;align-items:center;flex-wrap:wrap"><span style="flex:1">⚠️ <b>Données fictives d'exemple.</b> Elles s'effacent toutes seules dès que tu envoies ton premier vrai document.</span><button class="b red" onclick="clearDemo()">Effacer l'exemple</button></div>`:"")+`<div class="hero"><div class="hello">Salut ${esc(prenom)} 👋</div><div class="big">${big}</div>
+   ${empty?"":`<div class="gauge"><div class="p" style="width:${pt}%"></div><div class="r" style="width:${pr}%"></div></div>
+   <div class="hstats"><div><span>Réalisé</span><b>${h1(sDAr.total)}</b></div><div><span>Prévu</span><b>${h1(prevuH)}</b></div><div><span>Total / 507 h</span><b style="color:${sDA.total>=507?"#7EE2A0":"#FF5A6E"}">${h1(sDA.total)}</b></div><div><span>Brut déclaré</span><b>${eur0(sDAr.sal)}</b></div>${da?`<div><span>Date anniversaire</span><b>${da>=t?"J-"+Math.round((da-t)/864e5):"passée"}</b></div>`:""}</div>`}
+   <div class="actions" style="position:relative;z-index:1">${empty?`<button class="b ghost" style="color:#fff;border-color:#444" onclick="loadDemo()">Voir avec un exemple</button>`:`<button class="b light" onclick="go('projection');setTimeout(()=>$('plEmp').focus(),50)">+ Ajouter des dates prévues</button><button class="b ghost" style="color:#fff;border-color:#444" onclick="go('projection')">Voir ma courbe d'heures</button>`}</div></div>`;
+  if(!empty&&S.contrats.length)$("hero").querySelector(".hstats").insertAdjacentHTML("afterend",`<div class="small" style="color:#A9A49C;margin-top:8px;position:relative;z-index:1">Période : ${fd(wDA.from)} → ${fd(wDA.to)} · salaire brut moyen ${sDAr.total?eur(sDAr.sal/sDAr.total):"—"} / h</div>`);
+  // DATE ANNIVERSAIRE
+  let a=`<h2>📅 Date anniversaire</h2>`;
+  if(!da)a+=`<p class="small">Indique-la dans Plus › Réglages, ou envoie ta notification France Travail en PDF.</p>`;
+  else{const j=Math.round((da-t)/864e5);
+    a+=`<div class="num" style="font-size:26px;font-weight:600">${fd(da)}</div><div class="small">${j>=0?`dans ${j} jours`:"passée : vérifie le réexamen et envoie ta nouvelle notification"}</div>`;
+    if(deb&&da>deb){const tot=(da-deb)/864e5,done=Math.min(tot,Math.max(0,(t-deb)/864e5));a+=`<div class="meter" style="margin-top:12px"><i style="width:${done/tot*100}%"></i></div><div class="small">Période d'indemnisation : ${fd(deb)} → ${fd(da)}</div>`}
+    if(j>=0&&j<60)a+=`<div class="note">Plus que ${j} jours : vérifie que toutes tes AEM sont bien là.</div>`}
+  $("cAnniv").innerHTML=a;
+  // ALLOCATION
+  let jx=`<h2>💶 Mon allocation</h2>`;
+  if(ajc.aj)jx+=`<div class="num" style="font-size:26px;font-weight:600">${eur(ajc.aj)} <span class="small">/ jour</span></div><div class="small">${ajc.src==="notifiée"?"montant France Travail":"estimation"} · ≈ ${eur0(ajc.aj*30)} brut pour un mois sans travail</div>`;
+  else jx+=`<p class="small">Elle s'affiche dès que tu envoies ta notification ou une attestation mensuelle France Travail.</p>`;
+  if(sDA.total>0)jx+=`<div class="note ${ajc.aj&&ajNext.aj<ajc.aj?"":"ok"}" style="margin-top:12px">Au prochain renouvellement : <b>≈ ${eur(ajNext.aj)} / jour</b>${ajc.aj?` (${ajNext.aj-ajc.aj>=0?"+":""}${eur(ajNext.aj-ajc.aj)})`:""}${prevuH>0?", dates prévues comprises":""}.</div>`;
+  $("cAJ").innerHTML=jx;
+  // DÉTAIL
+  let html=`<div class="small" style="margin-top:6px">Période examinée : ${fd(wDA.from)} → ${fd(wDA.to)}${le?" (après ton dernier renouvellement, jusqu'au dernier contrat avant la date anniversaire)":""}</div>
+  <table class="breakdown" style="margin-top:8px">
+  <tr><td>Heures de travail (contrats et cachets)</td><td class="n">${h1(sDA.spect+sDA.ecrete)}</td></tr>
+  <tr><td>Enseignement retenu (max ${sDA.capEns} h)</td><td class="n">${h1(sDA.ensR)}</td></tr>
+  <tr><td>Formation retenue</td><td class="n">${h1(sDA.formR)}</td></tr>
+  <tr><td>Périodes assimilées (maladie, maternité… 5 h/jour)</td><td class="n">${h1(sDA.ass)}</td></tr>
+  ${sDA.ecrete>0.05?`<tr><td class="bad">Au-delà du plafond mensuel (${annexe()===8?"208 h, 250 h si plusieurs employeurs":"28 cachets"}) : non retenu</td><td class="n bad">− ${h1(sDA.ecrete)}</td></tr>`:""}
+  <tr><td><b>Total retenu</b> (dont ${h1(prevuH)} prévues)</td><td class="n"><b>${h1(sDA.total)}</b></td></tr></table>
+  <h3>Allocation estimée au renouvellement</h3>
+  <table class="breakdown"><tr><td>Partie A (salaires : ${eur0(sDA.sal)})</td><td class="n mono">${eur(ajNext.A)}</td></tr><tr><td>Partie B (heures)</td><td class="n mono">${eur(ajNext.B)}</td></tr><tr><td>Partie C (fixe)</td><td class="n mono">${eur(ajNext.C)}</td></tr><tr><td><b>AJ brute</b>${ajNext.auPlancher?` <span class="tag">plancher appliqué</span>`:""}</td><td class="n mono"><b>${eur(ajNext.aj)}</b></td></tr></table>`;
+  if(sDA.total<507&&sDA.total>=338){const nbO=num(S.profil.nbOuvertures);html+=`<div class="note">Entre 338 et 507 h : la <b>clause de rattrapage</b> donne 6 mois de plus pour atteindre les 507 h, si tu as eu 5 ouvertures de droits (ou 5 × 507 h) sur les 10 dernières années${nbO?` (renseigné : ${nbO})`:""}. À demander par écrit à France Travail.</div>`}
+  html+=`<p class="small">Estimation avant prélèvements sociaux. Seule la notification France Travail fait foi.</p>`;
+  $("c507").innerHTML=html;
+  // À FAIRE
+  const pp=S.contrats.filter(c=>c.statut==="prevu"&&D(c.fin)<t);
+  const av=S.contrats.filter(c=>c.aVerifier);
+  const grp={};for(const c of S.contrats){const k=normE(c.employeur)+"|"+c.debut+"|"+c.fin+"|"+c.type;(grp[k]=grp[k]||[]).push(c)}
+  const dbl=Object.values(grp).filter(g=>g.length>1);
+  const aem=S.contrats.filter(c=>!c.aem&&statutOf(c)==="reel"&&(c.type==="heures"||c.type==="cachets"));
+  let td=`<h2>✔️ À faire</h2>`,n=0;
+  if(dbl.length){n++;td+=`<h3>Doublons possibles</h3><p class="small" style="margin:0 0 6px">Même employeur, mêmes dates. Si c'est bien le même contrat saisi deux fois, supprime le doublon.</p><table>${dbl.map(g=>g.slice(1).map(c=>`<tr><td>${esc(c.employeur)}<br><span class="small">${h1(heuresBrutes(c))} · ${c.brut?eur(num(c.brut)):"—"} (l'autre : ${h1(heuresBrutes(g[0]))} · ${g[0].brut?eur(num(g[0].brut)):"—"})</span></td><td class="small">${fd(D(c.debut))}</td><td class="n" style="white-space:nowrap"><button class="link del" onclick="delC('${c.id}')">Supprimer le doublon</button></td></tr>`).join("")).join("")}</table>`}
+  if(pp.length){n++;td+=`<h3>Ces dates prévues ont-elles eu lieu ?</h3><table>${pp.slice(0,6).map(c=>`<tr><td>${esc(c.employeur)}</td><td class="small">${fd(D(c.fin))}</td><td class="n" style="white-space:nowrap"><button class="link" onclick="realise('${c.id}')">Oui ✓</button><button class="link del" onclick="delC('${c.id}')">Annulée</button></td></tr>`).join("")}</table>`}
+  if(av.length){n++;td+=`<h3>Lu avec un doute</h3><table>${av.slice(0,6).map(c=>`<tr><td>${esc(c.employeur)}<br><span class="small">${esc(c.doute||"")}</span></td><td class="small">${fd(D(c.fin))}</td><td class="n" style="white-space:nowrap"><button class="link" onclick="toggle('${c.id}','aVerifier')">C'est bon ✓</button><button class="link" onclick="openC('${c.id}')">Corriger</button></td></tr>`).join("")}</table>`}
+  if(aem.length){n++;td+=`<h3>AEM pas encore reçue</h3><p class="small" style="margin:0 0 6px">Sans AEM, France Travail ne compte pas ces heures. Ajoute le PDF dès que tu l'as, ou relance l'employeur.</p><table>${aem.slice(0,6).map(c=>`<tr><td>${esc(c.employeur)}</td><td class="small">${fd(D(c.fin))}</td><td class="n"><button class="link" onclick="toggle('${c.id}','aem')">Reçue ✓</button></td></tr>`).join("")}</table>`}
+  for(const c of congesTodo()){n++;td+=`<h3>Congés spectacles à demander</h3><p class="small" style="margin:0 0 6px">Exercice ${c.lab} : ≈ <b>${eur0(c.icp)}</b> à demander à Audiens avant le <b>31 mars ${c.y+2}</b>.</p><button class="link" onclick="go('conges')">Voir</button> <button class="link" onclick="setConges(${c.y},'demande',true)">Demande faite ✓</button>`}
+  if(!n)td+=`<p class="small ok">Rien à faire, tout est à jour 👌</p>`;
+  $("cTodo").innerHTML=td;$("cDetail").style.display=empty?"none":"";
+}
+const TYPES={heures:["Heures","p-h"],cachets:["Cachets","p-c"],enseignement:["Enseignement","p-a"],formation:["Formation","p-a"],assimile:["Assimilé","p-x"]};
+function renderContrats(){
+  const PL=periodes();const fy=$("fYear"),fe=$("fEmp"),ve=fe.value;
+  const cnt=k=>S.contrats.filter(c=>inPer(c,PL.find(x=>x.k===k))).length;
+  fy.innerHTML=PL.filter(x=>x.k==="cur"||x.k==="all"||cnt(x.k)).map(x=>`<option value="${x.k}" ${x.k===perSel?"selected":""}>${esc(x.lab)}</option>`).join("")+`<option value="tout" ${perSel==="tout"?"selected":""}>Tous les contrats</option>`;
+  const pr=perSel==="tout"?null:perCourante();
+  const emps=[...new Set(S.contrats.map(c=>c.employeur))].sort();
+  fe.innerHTML=`<option value="">Tous les employeurs</option>`+emps.map(e=>`<option ${e===ve?"selected":""}>${esc(e)}</option>`).join("");
+  $("empList").innerHTML=emps.map(e=>`<option value="${esc(e)}">`).join("");
+  const list=S.contrats.filter(c=>inPer(c,pr)&&(!fe.value||c.employeur===fe.value)).sort((a,b)=>(b.debut||"").localeCompare(a.debut||""));
+  $("perTiles").innerHTML=PL.filter(x=>x.k!=="all"&&(x.k==="cur"||cnt(x.k))).map(x=>{const L=S.contrats.filter(c=>inPer(c,x));const hr=L.filter(c=>statutOf(c)==="reel").reduce((s,c)=>s+heuresBrutes(c),0),hp=L.filter(c=>statutOf(c)==="prevu").reduce((s,c)=>s+heuresBrutes(c),0),br=L.filter(c=>statutOf(c)==="reel").reduce((s,c)=>s+num(c.brut),0);
+    return `<button class="tile" style="${x.k===perSel?"border-color:var(--brand);box-shadow:0 0 0 1px var(--brand)":""}" onclick="perSel='${x.k}';renderContrats();renderEmployeurs()"><span style="font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--brand);font-weight:700">${esc(x.court)}</span><b class="num" style="font-size:22px">${h1(hr)}${hp?` <span class="small">+ ${h1(hp)} prévues</span>`:""}</b><span>${eur0(br)} brut · ${L.length} contrat(s)<br>${x.from?fd(x.from):"…"} → ${x.to?fd(x.to):"…"}</span></button>`}).join("");
+  $("cCount").textContent=`${list.length} contrat(s) · ${h1(list.reduce((s,c)=>s+heuresBrutes(c),0))} · ${eur0(list.reduce((s,c)=>s+num(c.brut),0))} brut`;
+  if(!list.length){$("tC").innerHTML=`<tr><td class="empty">Aucun contrat pour l'instant. Ajoute une AEM en PDF juste au-dessus.</td></tr>`;return}
+  $("tC").innerHTML=`<tr><th>Dates</th><th>Employeur</th><th class="n">Heures</th><th class="n hide-m">Brut</th><th class="hide-m">Statut</th><th class="hide-m"></th></tr>`+
+  list.map(c=>{const pv=statutOf(c)==="prevu";const t=TYPES[c.type]||["?","p-x"];const d1=fd(D(c.debut)),d2=fd(D(c.fin));
+    let st=pv?`<span class="pill p-p">prévu</span>`:c.aem?`<span class="pill p-h">✓ AEM</span>`:`<span class="pill p-c">AEM à venir</span>`;
+    if(c.aVerifier)st+=` <span class="pill p-v" title="${esc(c.doute||"")}">à vérifier</span>`;
+    const act=pv?`<button class="link" onclick="realise('${c.id}')">Fait ✓</button>`:!c.aem?`<button class="link" onclick="toggle('${c.id}','aem')">AEM reçue</button>`:"";
+    return `<tr><td class="mono small" style="white-space:nowrap">${d1}${d1!==d2?`<br>${d2}`:""}</td><td><b>${esc(c.employeur)}</b>${c.type!=="heures"?` <span class="pill ${t[1]}">${t[0]}</span>`:""}${(c.docs||[]).map(d=>` <a class="small" href="/_blob/${esc(d)}" target="_blank" rel="noopener" title="Voir le document">📎</a>`).join("")}${c.poste?`<br><span class="small">${esc(c.poste)}</span>`:""}<div class="show-m" style="margin-top:4px">${st} ${act}<button class="link" onclick="openC('${c.id}')">Modifier</button></div></td><td class="n">${h1(heuresBrutes(c))}${c.type==="cachets"?`<br><span class="tag">${num(c.quantite)} cachet(s)</span>`:""}</td><td class="n hide-m">${c.brut?eur0(num(c.brut))+(c.estime?'<br><span class="tag">estimé</span>':""):"—"}</td><td class="hide-m">${st}</td><td class="n hide-m" style="white-space:nowrap">${act}<button class="link" onclick="openC('${c.id}')">Modifier</button><button class="link del" onclick="delC('${c.id}')">×</button></td></tr>`}).join("");
+}
+function renderEmployeurs(){
+  const pr=perSel==="tout"?null:perCourante();
+  const m={};for(const c of S.contrats.filter(c=>inPer(c,pr))){const e=m[c.employeur]||(m[c.employeur]={n:0,h:0,b:0,net:0,last:null,first:null,aem:0,np:0});e.n++;e.h+=heuresBrutes(c);e.b+=num(c.brut);e.net+=num(c.net);const f=D(c.fin),d=D(c.debut);if(f&&(!e.last||f>e.last))e.last=f;if(d&&(!e.first||d<e.first))e.first=d;if(statutOf(c)==="reel"&&!c.aem&&(c.type==="heures"||c.type==="cachets"))e.aem++;if(statutOf(c)==="reel"&&!c.paye&&num(c.brut)>0)e.np++}
+  const rows=Object.entries(m).sort((a,b)=>b[1].b-a[1].b);
+  $("empPer").innerHTML=`Affiché : <b>${esc(pr?pr.lab:"tous les contrats")}</b>. Change de période dans l'onglet Mes contrats.`;
+  if(!rows.length){$("tE").innerHTML=`<tr><td class="empty">Les employeurs apparaîtront ici dès le premier contrat saisi.</td></tr>`;return}
+  const tb=rows.reduce((s,[,e])=>s+e.b,0),th=rows.reduce((s,[,e])=>s+e.h,0);
+  $("tE").innerHTML=`<tr><th>Employeur</th><th class="n">Contrats</th><th class="n">Heures</th><th class="n">Brut</th><th class="n">Net</th><th class="n">€ brut / h</th><th class="n">Part du brut</th><th>Période</th><th>AEM à relancer</th><th>Impayés</th></tr>`+
+  rows.map(([n,e])=>`<tr><td><b>${esc(n)}</b></td><td class="n">${e.n}</td><td class="n">${h1(e.h)}</td><td class="n">${eur0(e.b)}</td><td class="n">${e.net?eur0(e.net):"—"}</td><td class="n">${e.h?eur(e.b/e.h):"—"}</td><td class="n">${tb?Math.round(e.b/tb*100)+" %":"—"}</td><td class="small mono">${fd(e.first)} → ${fd(e.last)}</td><td>${e.aem?`<span class="bad">${e.aem}</span>`:"—"}</td><td>${e.np?`<span class="warn">${e.np}</span>`:"—"}</td></tr>`).join("")+
+  `<tr><td><b>Total</b></td><td class="n"><b>${S.contrats.length}</b></td><td class="n"><b>${h1(th)}</b></td><td class="n"><b>${eur0(tb)}</b></td><td colspan="6"></td></tr>`;
+}
+function renderMois(){
+  const {deb,da}=dates();const aj=ajCourante().aj;
+  if(!deb||!da||!aj){$("tM").innerHTML=`<tr><td class="empty">Renseigne la date de fin du contrat d'ouverture et l'AJ notifiée (Paramètres) pour voir le détail mois par mois.</td></tr>`;$("moisNote").style.display="none";$("moisRange").textContent="";return}
+  $("moisNote").style.display="";
+  $("moisRange").textContent=`${fd(deb)} → ${fd(da)} · AJ ${eur(aj)}`;
+  const fo=D(S.profil.finOuverture);const fr=fo?(()=>{const w=fenetre(fo);const st=stats(w.from,w.to);return franchises(st.sal,st.salTot,st.total)})():{cp:0,cpMois:2,sal:0,salMois:0};
+  let attente=7,cpRest=fr.cp,salRest=fr.sal,cpRep=0,salRep=0,nM=0;
+  let rows=[],tot={h:0,s:0,are:0,rec:0};
+  let cur=new Date(Date.UTC(deb.getUTCFullYear(),deb.getUTCMonth(),1));
+  while(cur<=da&&rows.length<14){
+    const mEnd=new Date(Date.UTC(cur.getUTCFullYear(),cur.getUTCMonth()+1,0));
+    const from=deb>cur?deb:cur,to=da<mEnd?da:mEnd;const jours=daysIncl(from,to);
+    let h=0,s=0;for(const c of S.contrats){const r=part(c,from,to);if(r){h+=heuresBrutes(c)*r;s+=num(c.brut)*r}}
+    const m=moisARE(h,s,jours,aj);let ind=m.ind;nM++;
+    // délai d'attente puis franchises, consommés sur jours indemnisables
+    const dA=Math.min(attente,ind);attente-=dA;ind-=dA;
+    const cpF=Math.min(ind,Math.min(cpRest,fr.cpMois+cpRep));cpRep=Math.min(cpRest,fr.cpMois+cpRep)-cpF;cpRest-=cpF;ind-=cpF;
+    let salF=0;if(nM<=8||salRep>0){const dispo=Math.min(salRest,(nM<=8?fr.salMois:0)+salRep);salF=Math.min(ind,dispo);salRep=dispo-salF;salRest-=salF;ind-=salF}
+    const are=ind*aj;const key=iso(cur).slice(0,7);const rec=S.areRecue[key];
+    tot.h+=h;tot.s+=s;tot.are+=are;if(rec!=null&&rec!=="")tot.rec+=num(rec);
+    rows.push(`<tr><td><b>${MOIS[cur.getUTCMonth()]} ${cur.getUTCFullYear()}</b></td><td class="n">${h1(h)}</td><td class="n">${eur0(s)}</td><td class="n">${m.jni}${m.raison==="seuil"?" <span class='tag'>seuil</span>":""}</td><td class="n">${dA+cpF+salF||"—"}</td><td class="n">${ind}${m.raison==="plafond"?" <span class='tag'>plafond</span>":""}</td><td class="n mono">${eur0(are)}</td><td class="n"><input class="inl" data-k="${key}" value="${rec??""}" placeholder="—"></td><td class="n mono">${eur0(s+are)}</td></tr>`);
+    cur=new Date(Date.UTC(cur.getUTCFullYear(),cur.getUTCMonth()+1,1));
+  }
+  $("tM").innerHTML=`<tr><th>Mois</th><th class="n">Heures</th><th class="n">Brut</th><th class="n">Jours non indemn.</th><th class="n">Attente / franchises</th><th class="n">Jours payés</th><th class="n">ARE estimée</th><th class="n">ARE reçue</th><th class="n">Revenu brut total</th></tr>`+rows.join("")+
+  `<tr><td><b>Total</b></td><td class="n"><b>${h1(tot.h)}</b></td><td class="n"><b>${eur0(tot.s)}</b></td><td></td><td></td><td></td><td class="n mono"><b>${eur0(tot.are)}</b></td><td class="n mono"><b>${tot.rec?eur0(tot.rec):"—"}</b></td><td class="n mono"><b>${eur0(tot.s+tot.are)}</b></td></tr>`;
+  $("moisNote").innerHTML=`Jours non indemnisables = heures du mois ÷ ${annexe()===8?"8 × 1,4":"10 × 1,3"}, arrondi à l'entier inférieur. Au-delà de ${annexe()===8?26:27} jours de travail, rien n'est versé ce mois-là. Salaires + ARE plafonnés à ${eur(B().pmss*B().cumulCoef)} brut par mois. Franchises calculées : congés payés ${fr.cp} j (${fr.cpMois} j/mois), salaires ${fr.sal} j (sur 8 mois), plus 7 jours de délai d'attente.`;
+  document.querySelectorAll("#tM input.inl").forEach(i=>i.onchange=()=>{const v=i.value.trim();if(v==="")delete S.areRecue[i.dataset.k];else S.areRecue[i.dataset.k]=num(v);save();renderMois()});
+}
+function renderSimu(){
+  const {da}=dates();const t=today();
+  if(!$("simD").value)$("simD").value=iso(da&&da>t?addDays(da,-1):t);
+  const sd=D($("simD").value)||t;
+  const extra=[];const h=num($("simH").value),ca=num($("simCa").value),s=num($("simS").value);
+  if(h||ca||s){const st=iso(addDays(sd,-20)),en=iso(sd);
+    const tot=h+ca*B().hCachet;
+    if(h)extra.push({type:"heures",quantite:h,brut:tot?s*h/tot:s,debut:st,fin:en});
+    if(ca)extra.push({type:"cachets",quantite:ca,brut:tot?s*ca*B().hCachet/tot:0,debut:st,fin:en});
+    if(!h&&!ca)extra.push({type:"heures",quantite:0,brut:s,debut:st,fin:en});}
+  const lim=da||sd;const lastReal=lastEndBefore(lim);const fin=(sd<=lim&&(!lastReal||sd>lastReal))?sd:(lastReal||sd);
+  const w=fenetre(fin);const fo0=D(S.profil.finOuverture);if(fo0&&w.from<=fo0&&fo0<w.to)w.from=addDays(fo0,1);const before=stats(w.from,w.to),after=stats(w.from,w.to,extra);
+  const a0=calcAJ(before.sal,before.total),a1=calcAJ(after.sal,after.total);
+  $("simOut").innerHTML=`<h2>Résultat</h2><div class="small">Période examinée : ${fd(w.from)} → ${fd(w.to)}</div>
+  <table class="breakdown" style="margin-top:8px"><tr><th></th><th class="n">Actuel</th><th class="n">Avec la simulation</th></tr>
+  <tr><td>Heures retenues</td><td class="n">${h1(before.total)}</td><td class="n"><b>${h1(after.total)}</b></td></tr>
+  <tr><td>Salaire de référence</td><td class="n">${eur0(before.sal)}</td><td class="n"><b>${eur0(after.sal)}</b></td></tr>
+  <tr><td>AJ estimée</td><td class="n">${before.total?eur(a0.aj):"—"}</td><td class="n"><b>${after.total?eur(a1.aj):"—"}</b></td></tr>
+  <tr><td>≈ par mois sans travail</td><td class="n">${before.total?eur0(a0.aj*30):"—"}</td><td class="n"><b>${after.total?eur0(a1.aj*30):"—"}</b></td></tr></table>
+  <div class="note ${after.total>=507?"ok":"bad"}">${after.total>=507?"✅ 507 heures atteintes avec ces contrats.":`Encore ${h1(507-after.total)} à trouver.`}</div>`;
+  const aj=num($("mAJ").value)||ajCourante().aj||38;if(!$("mAJ").value)$("mAJ").value=aj.toFixed(2);
+  const r=moisARE(num($("mH").value),num($("mS").value),num($("mJ").value),aj);
+  $("mOut").innerHTML=`<table class="breakdown"><tr><td>Jours de travail retenus (${annexe()===8?"heures ÷ 8":"heures ÷ 10"})</td><td class="n mono">${(Math.round(r.jTrav*100)/100).toLocaleString("fr-FR")}</td></tr>
+  <tr><td>Jours non indemnisables (× ${annexe()===8?"1,4":"1,3"}, arrondi inférieur)</td><td class="n mono">${r.jni}</td></tr>
+  <tr><td>Jours indemnisés</td><td class="n mono">${r.ind}${r.raison==="plafond"?" (plafond de cumul)":r.raison==="seuil"?" (seuil de jours travaillés atteint)":""}</td></tr>
+  <tr><td><b>ARE brute du mois</b></td><td class="n mono"><b>${eur(r.are)}</b></td></tr>
+  <tr><td>Revenu brut total (salaire + ARE)</td><td class="n mono">${eur(num($("mS").value)+r.are)}</td></tr></table>`;
+}
+function renderParams(){
+  document.querySelectorAll("[data-p]").forEach(el=>{const k=el.dataset.p;if(document.activeElement===el)return;if(el.type==="checkbox")el.checked=!!S.profil[k];else el.value=S.profil[k]??""});
+  document.querySelectorAll("[data-b]").forEach(el=>{if(document.activeElement===el)return;el.value=S.bareme[el.dataset.b]??BAREME_DEFAUT[el.dataset.b]});
+  $("saveInfo").textContent="Tes données sont enregistrées uniquement sur cet appareil (rien n'est envoyé sur internet). Exporte une sauvegarde de temps en temps : elle te permet de tout retrouver si tu changes de téléphone ou d'ordinateur.";
+  const b=B();
+  $("rules").innerHTML=`
+  <h3>Ouverture et renouvellement</h3>
+  <p>507 heures sur les 12 mois qui précèdent la fin du dernier contrat. Les droits courent 12 mois jusqu'à la <b>date anniversaire</b>, fixée à partir de la fin du contrat qui a ouvert les droits ; à cette date, France Travail réexamine les droits sur les 12 mois précédant la dernière fin de contrat. </p>
+  <p><b>Techniciens (annexe 8)</b> : on compte les heures réelles déclarées par l'employeur sur l'AEM, dans la limite de 208 h par mois civil (250 h s'il y a plusieurs employeurs dans le mois). Il n'y a pas de conversion des cachets : si tu es payé « au cachet », c'est le nombre d'heures inscrit sur l'AEM qui compte. <b>Artistes (annexe 10)</b> : un cachet = ${b.hCachet} heures, quel que soit le type de cachet, dans la limite de 28 cachets par mois. L'ancienne règle « cachet groupé = 8 h » a disparu en 2016.</p>
+  <p>Heures assimilées : enseignement dans un établissement agréé jusqu'à 70 h (120 h à partir de 50 ans) ; formation et enseignement ensemble jusqu'à 338 h ; maladie, maternité, accident du travail comptés 5 h par jour.</p>
+  <p><b>Clause de rattrapage</b> : si les 507 h ne sont pas atteintes à la date anniversaire, avec au moins 338 h sur 12 mois et 5 ouvertures de droits (ou 5 × 507 h) sur 10 ans, 6 mois d'indemnisation supplémentaires pour atteindre les 507 h, à demander par écrit.</p>
+  <h3>Allocation journalière (AJ = A + B + C)</h3>
+  <div class="formula">Annexe 8 (techniciens)
+A = ${b.ajMin} × [0,42 × SR jusqu'à 14 400 € + 0,05 × SR au-delà] ÷ 5 000
+B = ${b.ajMin} × [0,26 × NHT jusqu'à 720 h + 0,08 × NHT au-delà] ÷ 507
+C = ${b.ajMin} × 0,40            plancher : ${b.plancher8} €
+
+Annexe 10 (artistes)
+A = ${b.ajMin} × [0,36 × SR jusqu'à 13 700 € + 0,05 × SR au-delà] ÷ 5 000
+B = ${b.ajMin} × [0,26 × NHT jusqu'à 690 h + 0,08 × NHT au-delà] ÷ 507
+C = ${b.ajMin} × 0,70            plancher : ${b.plancher10} €
+
+SR = salaires bruts de la période · NHT = heures travaillées et assimilées</div>
+  <h3>Chaque mois</h3>
+  <p>Jours non indemnisables = heures du mois ÷ 8 × 1,4 (annexe 8) ou ÷ 10 × 1,3 (annexe 10). Aucune allocation au-delà de 26 jours de travail (annexe 8) ou 27 (annexe 10). Salaires + allocations plafonnés à ${b.cumulCoef.toLocaleString("fr-FR")} × PMSS = ${eur(b.pmss*b.cumulCoef)} brut par mois.</p>
+  <h3>Au début de l'indemnisation</h3>
+  <p>Délai d'attente de 7 jours. Franchise congés payés : jours travaillés × 2,5 ÷ 24, plafonnée à 30 jours, 2 ou 3 jours par mois. Franchise salaires : (salaires ÷ SMIC mensuel) × (salaire journalier moyen ÷ 3 SMIC journaliers) − 27 jours, répartie sur les 8 premiers mois.</p>
+  <p class="small">Sources : Unédic (dossier de synthèse intermittents), France Travail (guide intermittents, fiche franchises, page heures d'enseignement). Outil d'estimation : il ne remplace pas la notification de France Travail.</p>`;
+}
+/* ===== PROJECTION ===== */
+function dateAtteinte(){const t=today();const fins=[...new Set(S.contrats.filter(c=>c.type==="heures"||c.type==="cachets").map(c=>c.fin))].filter(f=>D(f)>=addDays(t,-1)).sort();
+  for(const f of fins){const w=fenetre(D(f));if(stats(w.from,w.to).total>=507)return D(f)}return null}
+function habitude(emp){const L=S.contrats.filter(c=>sameEmp(c.employeur,emp)&&statutOf(c)==="reel"&&(c.type==="heures"||c.type==="cachets")).sort((a,b)=>b.fin.localeCompare(a.fin)).slice(0,6);
+  if(!L.length)return null;const ca=L.filter(c=>c.type==="cachets").length>L.length/2;const type=ca?"cachets":"heures";const M=L.filter(c=>c.type===type);
+  let q=0,j=0,b=0,qb=0;for(const c of M){const d=daysIncl(D(c.debut),D(c.fin));q+=num(c.quantite);j+=d;if(num(c.brut)>0){b+=num(c.brut);qb+=num(c.quantite)}}
+  return {type,parJour:Math.round(q/j*2)/2||(ca?1:8),prixUnit:qb?b/qb:null,n:M.length,nom:L[0].employeur}}
+let plDates=[];
+function renderPlanner(){const emp=$("plEmp").value.trim();const hb=emp?habitude(emp):null;
+  $("plQLab").textContent=hb&&hb.type==="cachets"?"Cachets par date":"Heures par date";
+  $("plChips").innerHTML=plDates.map(d=>`<span class="chip">${fd(D(d))}<button data-d="${d}" title="Retirer">×</button></span>`).join("");
+  $("plChips").querySelectorAll("button").forEach(b=>b.onclick=()=>{plDates=plDates.filter(x=>x!==b.dataset.d);renderPlanner()});
+  const q=num($("plQ").value);
+  $("plEst").innerHTML=!emp?"":hb?`D'après ${hb.n} contrat(s) avec ${esc(hb.nom)} : ${hb.parJour} ${hb.type==="cachets"?"cachet(s)":"h"} par jour${hb.prixUnit?`, ≈ ${eur(hb.prixUnit*q)} brut par date`:""}.${plDates.length?` <b>Total : ${h1((hb.type==="cachets"?q*B().hCachet:q)*plDates.length)}</b>`:""}`:`Nouvel employeur : ${h1(q)} par date${plDates.length?`, soit <b>${h1(q*plDates.length)}</b>`:""}. Le salaire sera complété quand l'AEM arrivera.`;
+  $("plAdd").textContent=plDates.length?`Ajouter ${plDates.length} date${plDates.length>1?"s":""}`:"Ajouter les dates";$("plAdd").disabled=!emp||!plDates.length;$("plAdd").style.opacity=$("plAdd").disabled?.5:1}
+$("plEmp").addEventListener("input",()=>{const hb=habitude($("plEmp").value.trim());if(hb)$("plQ").value=hb.parJour;renderPlanner()});
+$("plQ").addEventListener("input",renderPlanner);
+$("plDate").addEventListener("change",()=>{const v=$("plDate").value;if(v&&!plDates.includes(v)){plDates.push(v);plDates.sort()}renderPlanner()});
+$("plAdd").onclick=()=>{const emp=$("plEmp").value.trim();if(!emp||!plDates.length)return;const hb=habitude(emp);const q=num($("plQ").value);
+  for(const d of plDates)S.contrats.push({id:"c"+Date.now().toString(36)+Math.random().toString(36).slice(2,6),employeur:hb?hb.nom:emp,type:hb?hb.type:"heures",quantite:q,debut:d,fin:d,brut:hb&&hb.prixUnit?Math.round(hb.prixUnit*q*100)/100:"",net:"",poste:"",aem:false,paye:false,statut:"prevu",estime:true,note:"Date prévue"});
+  plDates=[];$("plDate").value="";save();renderAll()};
+function renderProjection(){
+  const t=today();const {da}=dates();const wP=fenetreDA(da||t);const start=wP.from;const end=da&&da>wP.to?da:new Date(Math.max(+wP.to,+addMonths(start,12)-864e5));
+  $("projRange").textContent=`${fd(start)} → ${fd(end)}`;
+  // cumul des heures depuis le début de la période
+  const pts=[];for(let d=start;d<=end;d=addDays(d,7))pts.push(d);if(+pts[pts.length-1]!==+end)pts.push(end);
+  const rows=pts.map(d=>({d,r:stats(start,d,[],"reel").total,p:stats(start,d).total}));
+  const W=900,H=300,ml=46,mr=16,mt=16,mb=34,iw=W-ml-mr,ih=H-mt-mb;
+  const ymax=Math.max(600,...rows.map(r=>r.p))*1.08;const x=d=>ml+(d-start)/(end-start)*iw,y=v=>mt+ih-v/ymax*ih;
+  const past=rows.filter(r=>r.d<=t),fut=rows.filter(r=>r.d>=t);const tt=t>end?end:t<start?start:t;const nowR={d:tt,r:stats(start,tt,[],"reel").total,p:stats(start,tt).total};
+  const line=(arr,k)=>arr.map((r,i)=>(i?"L":"M")+x(r.d).toFixed(1)+","+y(r[k]).toFixed(1)).join("");
+  let g="";const step=ymax>900?200:100;for(let v=0;v<=ymax;v+=step)g+=`<line x1="${ml}" x2="${W-mr}" y1="${y(v)}" y2="${y(v)}" stroke="#EEE9E0"/><text x="${ml-8}" y="${y(v)+4}" text-anchor="end" font-size="11" fill="#6B6B73">${v}</text>`;
+  let m=new Date(Date.UTC(start.getUTCFullYear(),start.getUTCMonth()+1,1));while(m<=end){g+=`<text x="${x(m)}" y="${H-12}" text-anchor="middle" font-size="11" fill="#6B6B73">${MOIS[m.getUTCMonth()]}${m.getUTCMonth()===0?" "+m.getUTCFullYear():""}</text>`;m=new Date(Date.UTC(m.getUTCFullYear(),m.getUTCMonth()+1,1))}
+  g+=`<line x1="${ml}" x2="${W-mr}" y1="${y(507)}" y2="${y(507)}" stroke="#6B6B73" stroke-width="1.5" stroke-dasharray="5 4"/><text x="${W-mr-4}" y="${y(507)-6}" text-anchor="end" font-size="11.5" font-weight="600" fill="#18181B">507 h</text>`;
+  if(t>=start&&t<=end)g+=`<line x1="${x(t)}" x2="${x(t)}" y1="${mt}" y2="${mt+ih}" stroke="#18181B" stroke-opacity=".25"/><text x="${x(t)+5}" y="${mt+11}" font-size="11" fill="#6B6B73">aujourd'hui</text>`;
+  if(da&&da<=end&&da>=start)g+=`<line x1="${x(da)}" x2="${x(da)}" y1="${mt}" y2="${mt+ih}" stroke="#141414" stroke-width="1.5"/><text x="${x(da)-5}" y="${mt+ih-6}" text-anchor="end" font-size="11" font-weight="600" fill="#141414">date anniversaire</text>`;
+  const fut2=[{...nowR},...fut.filter(r=>r.d>t)];const past2=[...past.filter(r=>r.d<t),nowR];
+  g+=`<path d="${line(fut2,"p")}" fill="none" stroke="#C8102E" stroke-width="2" stroke-dasharray="6 5"/>`;
+  g+=`<path d="${line(past2,"r")}" fill="none" stroke="#C8102E" stroke-width="2.4"/>`;
+  const last=fut2[fut2.length-1];g+=`<circle cx="${x(last.d)}" cy="${y(last.p)}" r="4.5" fill="#fff" stroke="#C8102E" stroke-width="2"/><text x="${x(last.d)-8}" y="${y(last.p)-9}" text-anchor="end" font-size="12" font-weight="600" fill="#18181B">${Math.round(last.p)} h</text>`;
+  g+=`<circle cx="${x(t)}" cy="${y(nowR.r)}" r="4.5" fill="#C8102E" stroke="#fff" stroke-width="2"/>`;
+  g+=`<line id="pjX" y1="${mt}" y2="${mt+ih}" stroke="#18181B" stroke-opacity=".35" style="display:none"/><rect id="pjHit" x="${ml}" y="${mt}" width="${iw}" height="${ih}" fill="transparent"/>`;
+  const box=$("projChart");box.querySelector("svg")?.remove();box.insertAdjacentHTML("afterbegin",`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Cumul des heures sur la période, réalisé et prévu">${g}</svg>`);
+  const svg=box.querySelector("svg"),tip=$("projTip"),xl=svg.querySelector("#pjX");
+  svg.querySelector("#pjHit").onmousemove=e=>{const bb=svg.getBoundingClientRect();const px=(e.clientX-bb.left)/bb.width*W;let best=rows[0];for(const r of rows)if(Math.abs(x(r.d)-px)<Math.abs(x(best.d)-px))best=r;
+    xl.setAttribute("x1",x(best.d));xl.setAttribute("x2",x(best.d));xl.style.display="";tip.style.display="block";
+    tip.innerHTML=`<b>${fd(best.d)}</b><br>Réalisé : ${h1(best.r)}${best.d>t||best.p>best.r?`<br>Avec prévu : ${h1(best.p)}`:""}`;
+    const lx=x(best.d)/W*bb.width;tip.style.left=Math.min(bb.width-170,Math.max(0,lx+12))+"px";tip.style.top="20px"};
+  svg.querySelector("#pjHit").onmouseleave=()=>{tip.style.display="none";xl.style.display="none"};
+  // KPIs
+  const ref=da||t;const w=fenetreDA(ref);const le=w.le;const sR=stats(w.from,w.to,[],"reel"),sT=stats(w.from,w.to);
+  const prev=S.contrats.filter(c=>statutOf(c)==="prevu"&&D(c.fin)>=t);const cross=dateAtteinte();
+  $("projKpis").innerHTML=kpi("Réalisé",h1(sR.total),"retenu pour le renouvellement",sR.total>=507?"ok":"")+
+    kpi("Salaire brut déclaré",eur0(sR.sal),`${fd(w.from)} → ${fd(w.to)}${sT.sal>sR.sal?` · ≈ ${eur0(sT.sal)} avec le prévu`:""}`)+
+    kpi("Prévu d'ici la date anniversaire",h1(sT.total-sR.total),`${prev.length} date(s) / contrat(s) à venir`)+
+    kpi("Projeté à la date anniversaire",h1(sT.total),sT.total>=507?"507 h atteintes":`il manquera ${h1(507-sT.total)}`,sT.total>=507?"ok":"bad")+
+    (sR.total>=507?kpi("507 h","atteintes ✅","avec les contrats réalisés","ok"):kpi("507 h atteintes le",cross?fd(cross):"—",cross?"si les dates prévues se confirment":"pas avec les dates actuelles",cross?"ok":"warn"));
+  // tableau mensuel
+  const ms=new Date(Date.UTC(w.from.getUTCFullYear(),w.from.getUTCMonth(),1));let cur=ms,cum=0,tr="",sep=false;
+  let lastF=t;for(const c of S.contrats){const f=D(c.fin);if(f>lastF)lastF=f}
+  const lim=new Date(Math.max(+(da||t),+lastF,+t));
+  const sum=(a,b)=>{let hr=0,hp=0;if(b<a)return [0,0];for(const c of S.contrats){const r=part(c,a,b);if(!r)continue;const h=heuresBrutes(c)*r;if(statutOf(c)==="prevu")hp+=h;else hr+=h}return [hr,hp]};
+  while(cur<=lim){const me=new Date(Date.UTC(cur.getUTCFullYear(),cur.getUTCMonth()+1,0));const a=cur<w.from?w.from:cur;
+    const isNow=cur.getUTCFullYear()===t.getUTCFullYear()&&cur.getUTCMonth()===t.getUTCMonth();const lab=`${MOIS[cur.getUTCMonth()]} ${cur.getUTCFullYear()}`;
+    const [ir,ip]=sum(a,me<w.to?me:w.to);const [orr,op]=sum(cur>w.to?cur:addDays(w.to,1),me);
+    if(me<=w.to||ir+ip>0||cur<=w.to){cum+=ir+ip;tr+=`<tr class="${isNow&&!(orr+op)?"now":""}"><td><b>${lab}</b>${orr+op&&cur<=w.to?` <span class="tag">jusqu'au ${w.to.getUTCDate()}</span>`:""}</td><td class="n">${ir?h1(ir):"—"}</td><td class="n">${ip?h1(ip):"—"}</td><td class="n mono ${cum>=507?"ok":""}">${h1(cum)}</td></tr>`}
+    if(!sep&&me>=w.to){sep=true;tr+=`<tr><td colspan="4" style="background:var(--console);color:#fff;font-weight:600">${da&&w.to<=da?`Retenu pour la date anniversaire du ${fd(da)} : ${h1(cum)}`:`Fin de la période examinée (${fd(w.to)}) : ${h1(cum)}`}${cum>=507?" ✅":""}<br><span style="font-weight:400;font-size:12px;color:#ccc">Les heures en dessous comptent pour la période suivante.</span></td></tr>`}
+    if(orr+op>0)tr+=`<tr class="${isNow?"now":""}"><td><b>${lab}</b>${me>=w.to&&cur<=w.to?` <span class="tag">après le ${w.to.getUTCDate()}</span>`:""}</td><td class="n">${orr?h1(orr):"—"}</td><td class="n">${op?h1(op):"—"}</td><td class="n small">période suivante</td></tr>`;
+    cur=new Date(Date.UTC(cur.getUTCFullYear(),cur.getUTCMonth()+1,1))}
+  $("tP").innerHTML=`<tr><th>Mois</th><th class="n">Réalisé</th><th class="n">Prévu</th><th class="n">Cumul</th></tr>`+tr;
+  renderPlanner();
+}
+/* ===== CONGÉS SPECTACLES ===== */
+function exercice(y){return {y,from:D(y+"-04-01"),to:D((y+1)+"-03-31"),lab:`1er avril ${y} → 31 mars ${y+1}`}}
+function exCourant(){const t=today();return t.getUTCMonth()>=3?t.getUTCFullYear():t.getUTCFullYear()-1}
+function congesEx(y){const e=exercice(y);let br=0,bp=0,hr=0;
+  for(const c of S.contrats){if(c.type!=="heures"&&c.type!=="cachets")continue;const r=part(c,e.from,e.to);if(!r)continue;const b=num(c.brut)*r;if(statutOf(c)==="prevu")bp+=b;else{br+=b;hr+=heuresBrutes(c)*r}}
+  const jours=Math.min(30,Math.floor((hr/8)*2.5/24));const st=(S.conges||{})[y]||{};
+  return {...e,br,bp,icp:br*0.1,icpP:(br+bp)*0.1,jours,st,limite:D((y+2)+"-03-31"),ouverture:D((y+1)+"-04-15")}}
+function congesTodo(){const t=today();const out=[];for(const y of [exCourant()-1,exCourant()-2]){const c=congesEx(y);if(c.icp>0&&!c.st.demande&&!c.st.recu&&t>=D((y+1)+"-04-01")&&t<=c.limite)out.push(c)}return out}
+window.setConges=(y,k,v)=>{S.conges=S.conges||{};S.conges[y]={...(S.conges[y]||{}),[k]:v};save();renderAll()};
+function renderConges(){const el=$("congesBody");if(!el)return;const t=today();const yc=exCourant();
+  const card=(y,cur)=>{const c=congesEx(y);const ouverte=t>=D((y+1)+"-04-01");const exp=t>c.limite;
+    let st;if(c.st.recu)st=`<div class="note ok">✅ Indemnité reçue : <b>${eur(num(c.st.recu))}</b></div>`;
+    else if(c.st.demande)st=`<div class="note ok">📨 Demande faite. Il reste à recevoir le versement d'Audiens. <button class="link" onclick="setConges(${y},'demande',false)">Annuler</button></div>`;
+    else if(cur)st=`<div class="note">Exercice en cours : la demande sera possible à partir de la mi-avril ${y+1}.</div>`;
+    else if(exp)st=`<div class="note bad">La date limite du 31 mars ${y+2} est passée.</div>`;
+    else st=`<div class="note bad">⏰ À demander sur ton espace Congés Spectacles (Audiens) <b>avant le 31 mars ${y+2}</b>, et au moins 15 jours avant de partir en congé. <button class="link" onclick="setConges(${y},'demande',true)">C'est fait ✓</button></div>`;
+    return `<div class="card"><div class="step" style="font:700 12px Inter;letter-spacing:.08em;text-transform:uppercase;color:var(--brand)">${cur?"Exercice en cours":"Exercice précédent"}</div><h2>${c.lab}</h2>
+    <div class="grid g2" style="gap:10px;margin:10px 0"><div><div class="small">Salaires bruts déclarés</div><div class="num" style="font-size:22px;font-weight:600">${eur0(c.br)}</div>${cur&&c.bp?`<div class="small">+ ${eur0(c.bp)} prévus</div>`:""}</div>
+    <div><div class="small">Indemnité estimée (10 %)</div><div class="num" style="font-size:22px;font-weight:600;color:var(--brand)">${eur0(c.icp)}</div>${cur&&c.bp?`<div class="small">≈ ${eur0(c.icpP)} avec les dates prévues</div>`:""}</div></div>
+    <div class="small">≈ ${c.jours} jour(s) de congés acquis (2,5 jours par 24 jours travaillés, 30 maximum).</div>${st}
+    ${!c.st.recu&&!cur?`<div class="small" style="margin-top:8px">Montant reçu : <input class="inl" type="number" step="0.01" onchange="setConges(${y},'recu',num(this.value))" placeholder="—"></div>`:""}</div>`};
+  el.innerHTML=`<div class="grid g2">${card(yc,true)}${card(yc-1,false)}</div>
+  <div class="card" style="margin-top:16px"><h2>Comment ça marche</h2>
+  <p>Tes employeurs du spectacle ne te paient pas de congés directement : ils cotisent à la caisse des Congés Spectacles, gérée par Audiens. L'indemnité vaut <b>10 % des salaires bruts</b> déclarés entre le 1er avril et le 31 mars.</p>
+  <p>Elle n'arrive pas toute seule : il faut la <b>demander chaque année</b>, à partir de la mi-avril, sur ton espace personnel Congés Spectacles (avec ton numéro Congés Spectacles), au moins 15 jours avant ton départ en congé et au plus tard le 31 mars suivant.</p>
+  <p class="small">Estimation : Audiens calcule sur la « base congés » déclarée par chaque employeur, qui peut différer du brut. Un employeur qui ne cotise pas à la caisse ne génère pas de droits. Indique le montant reçu une fois l'indemnité versée.</p></div>`}
+function renderPro(){document.querySelectorAll(".lock").forEach(e=>e.textContent=isPro()?"":"🔒");const t=$("tileProTxt");if(t)t.textContent=isPro()?"Activée sur cet appareil. Merci !":`${CONFIG.prix} à vie : lecture illimitée des AEM, employeurs, congés spectacles, argent mois par mois.`}
+function renderAll(){renderPro();renderScan();renderConges();renderDocs();renderHeader();renderProjection();renderDash();renderContrats();renderEmployeurs();renderMois();renderSimu();renderParams()}
+
+/* ============ ACTIONS ============ */
+function go(t){if(PRO_SECTIONS[t]&&!isPro()){openPay(`« ${PRO_SECTIONS[t]} » fait partie de la version complète.`);return}const nt=["mois","employeurs","simu","params","conges"].includes(t)?"plus":t;document.querySelectorAll("nav button").forEach(b=>b.classList.toggle("on",b.dataset.t===nt));window.scrollTo(0,0);document.querySelectorAll("main section").forEach(s=>s.classList.toggle("on",s.id==="s-"+t));if(location.hash!=="#"+t)history.replaceState(null,"","#"+t)}
+$("tabs").onclick=e=>{const b=e.target.closest("button");if(b)go(b.dataset.t)};
+window.addEventListener("hashchange",()=>{const h=location.hash.slice(1);if($("s-"+h))go(h)});
+
+let editId=null;
+function openC(id){editId=id||null;const f=$("cForm");f.reset();$("cErr").textContent="";
+  const c=id?S.contrats.find(x=>x.id===id):{type:"heures",aem:false,paye:false};
+  $("modT").textContent=id?"Modifier le contrat":"Nouveau contrat";
+  for(const el of f.elements){if(!el.name)continue;if(el.type==="checkbox")el.checked=!!c[el.name];else el.value=c[el.name]??""}
+  if(!id){const t=iso(today());f.debut.value=t;f.fin.value=t}
+  qLabel();$("mod").classList.add("on");setTimeout(()=>f.employeur.focus(),50)}
+function qLabel(){const t=$("cForm").type.value;$("qLab").textContent=t==="cachets"?"Nombre de cachets":t==="assimile"?"Nombre de jours":"Nombre d'heures"}
+$("cForm").type.onchange=qLabel;
+$("modX").onclick=()=>$("mod").classList.remove("on");
+$("mod").onclick=e=>{if(e.target.id==="mod")$("mod").classList.remove("on")};
+$("cSave").onclick=()=>{const f=$("cForm");const o={};for(const el of f.elements){if(!el.name)continue;o[el.name]=el.type==="checkbox"?el.checked:el.value.trim()}
+  if(!o.employeur||!o.debut||!o.fin||o.quantite===""){$("cErr").textContent="Employeur, dates et quantité sont obligatoires.";return}
+  if(o.fin<o.debut){$("cErr").textContent="La date de fin est avant la date de début.";return}
+  o.quantite=num(o.quantite);o.brut=o.brut===""?"":num(o.brut);o.net=o.net===""?"":num(o.net);
+  if(editId){const i=S.contrats.findIndex(x=>x.id===editId);S.contrats[i]={...S.contrats[i],...o,aVerifier:false}}else S.contrats.push({id:"c"+Date.now().toString(36)+Math.random().toString(36).slice(2,6),...o});
+  $("mod").classList.remove("on");save();renderAll()};
+window.delC=id=>{const c=S.contrats.find(x=>x.id===id);if(!c)return;const btn=event.target;if(btn.dataset.ok){S.contrats=S.contrats.filter(x=>x.id!==id);save();renderAll()}else{const o=btn.textContent;btn.dataset.ok=1;btn.textContent="Supprimer ?";setTimeout(()=>{if(btn.isConnected){btn.textContent=o;delete btn.dataset.ok}},3000)}};
+window.realise=id=>{const c=S.contrats.find(x=>x.id===id);if(c){c.statut="reel";save();renderAll()}};
+window.toggle=(id,k)=>{const c=S.contrats.find(x=>x.id===id);if(c){c[k]=!c[k];save();renderAll()}};
+window.openC=openC;window.go=go;
+$("addC").onclick=()=>openC();
+$("fYear").onchange=()=>{perSel=$("fYear").value;renderContrats();renderEmployeurs()};$("fEmp").onchange=renderContrats;
+document.querySelectorAll("[data-p]").forEach(el=>el.onchange=()=>{S.profil[el.dataset.p]=el.type==="checkbox"?el.checked:el.value;save();renderAll()});
+document.querySelectorAll("[data-b]").forEach(el=>el.onchange=()=>{S.bareme[el.dataset.b]=num(el.value);save();renderAll()});
+["simH","simCa","simS","simD","mH","mS","mJ","mAJ"].forEach(id=>$(id).oninput=renderSimu);
+
+function loadDemo(){
+  S=VIDE();S.profil.finOuverture="2026-03-14";S.profil.ajNotifiee="";S.profil.nbOuvertures=3;
+  const L=[["Studio Concorde","heures",64,"2025-04-07","2025-04-15",1450,"Prise de son album"],["Théâtre de la Ville","heures",96,"2025-05-12","2025-05-25",2160,"Régie son"],["Prod Les Films du Nord","heures",120,"2025-06-02","2025-06-20",2880,"Chef op. son tournage"],["Festival Rock en Seine","heures",48,"2025-08-22","2025-08-24",1150,"Retours scène"],["Studio Concorde","heures",56,"2025-10-06","2025-10-13",1260,"Mixage"],["Théâtre de la Ville","heures",88,"2025-11-17","2025-11-29",1980,"Régie son"],["Lycée Auguste Renoir (agréé)","enseignement",30,"2026-01-12","2026-02-20",900,"Atelier MAO"],["Prod Les Films du Nord","heures",72,"2026-03-02","2026-03-14",1730,"Post-synchro"],["Studio Concorde","heures",40,"2026-05-04","2026-05-08",920,"Enregistrement"],["La Cigale","heures",36,"2026-06-12","2026-06-15",860,"Façade"],["Prod Les Films du Nord","heures",104,"2026-09-07","2026-09-21",2496,"Tournage série"],["Studio Concorde","heures",32,"2026-10-19","2026-10-22",760,"Mixage EP"]];
+  S.contrats=L.map((x,i)=>({id:"demo"+i,employeur:x[0],type:x[1],quantite:x[2],debut:x[3],fin:x[4],brut:x[5],net:Math.round(x[5]*0.77),poste:x[6],aem:i<10,paye:i<11,note:"Exemple"}));
+  [["La Cigale","2026-11-14"],["La Cigale","2026-11-15"],["Théâtre de la Ville","2026-12-05"],["Théâtre de la Ville","2026-12-06"],["Théâtre de la Ville","2026-12-07"],["Prod Les Films du Nord","2027-01-11"],["Studio Concorde","2027-02-02"]].forEach(([e,d],i)=>S.contrats.push({id:"demoP"+i,employeur:e,type:"heures",quantite:e.includes("Films")?40:9,debut:d,fin:e.includes("Films")?"2027-01-15":d,brut:"",net:"",poste:"",aem:false,paye:false,statut:"prevu",estime:true,note:"Date prévue (exemple)"}));
+  S.contrats.filter(c=>c.statut==="prevu").forEach(c=>{const hb=habitude(c.employeur);if(hb&&hb.prixUnit)c.brut=Math.round(hb.prixUnit*c.quantite*100)/100});
+  S.profil.nom="Alex";S.demo=true;save();renderAll();go("dash")}
+window.loadDemo=loadDemo;
+function clearDemo(){S=VIDE();save();renderAll();go('dash')}window.clearDemo=clearDemo;
+window.nouvellePeriode=f=>{const p=S.profil;p.ajPrecedente=p.ajNotifiee;p.finOuverture=f;p.dateAnnivForcee="";p.debutIndem="";p.ajNotifiee="";if(p.nbOuvertures!=="")p.nbOuvertures=num(p.nbOuvertures)+1;save();renderAll();window.scrollTo(0,0)};
+$("loadDemo").onclick=loadDemo;
+$("wipe").onclick=e=>{const b=e.target;if(b.dataset.ok){S=VIDE();save();renderAll();b.textContent="Tout effacer";delete b.dataset.ok}else{b.dataset.ok=1;b.textContent="Confirmer l'effacement ?";setTimeout(()=>{b.textContent="Tout effacer";delete b.dataset.ok},4000)}};
+
+$("expJson").onclick=()=>offer(`intermittence-${iso(today())}.json`,JSON.stringify(S,null,2));
+$("expCsv").onclick=()=>{const h=["employeur","type","quantite","heures","debut","fin","brut","net","poste","aem","paye","note"];
+  const rows=S.contrats.map(c=>h.map(k=>{let v=k==="heures"?heuresBrutes(c):c[k];if(typeof v==="number")v=String(v).replace(".",",");if(typeof v==="boolean")v=v?"oui":"non";return `"${String(v??"").replace(/"/g,'""')}"`}).join(";"));
+  offer(`contrats-${iso(today())}.csv`,"﻿"+h.join(";")+"\n"+rows.join("\n"))};
+$("impJson").onchange=async e=>{const f=e.target.files[0];if(!f)return;try{const o=JSON.parse(await f.text());if(!o||!Array.isArray(o.contrats))throw 0;const v=VIDE();S={...v,...o,demo:false,profil:{...v.profil,...o.profil},bareme:{...v.bareme,...o.bareme},areRecue:o.areRecue||{}};save();renderAll();$("copyBox").innerHTML=`<p class="small ok">Import réussi : ${S.contrats.length} contrat(s).</p>`}catch(err){$("copyBox").innerHTML=`<p class="small bad">Ce fichier n'est pas un export de cet outil.</p>`}e.target.value=""};
+
+/* ============ CONFIGURATION DE LA VENTE ============ */
+const CONFIG={
+  prix:"9,90 €",
+  lienAchat:"",          // lien de paiement Lemon Squeezy (à remplir)
+  produitId:"",          // identifiant du produit Lemon Squeezy (vérification des clés)
+  lecturesGratuites:5,   // lectures automatiques offertes dans la version gratuite
+  cleTest:"ESSAI-2026"   // clé d'essai, valable seulement tant que produitId est vide
+};
+const LSK="mon-intermittence-licence";
+function licence(){try{return JSON.parse(localStorage.getItem(LSK)||"null")}catch(e){return null}}
+function isPro(){const l=licence();return !!(l&&l.ok)}
+const PRO_SECTIONS={employeurs:"Mes employeurs",conges:"Mes congés spectacles",mois:"Mon argent mois par mois",simu:"Et si…"};
+function openPay(raison){const m=$("payMod");const restant=Math.max(0,CONFIG.lecturesGratuites-(S.lectures||0));
+  m.querySelector(".card").innerHTML=`<div class="split"><h2>⭐ Version complète</h2><button class="link" onclick="$('payMod').classList.remove('on')">Fermer</button></div>
+  ${raison?`<p class="small" style="margin-top:4px">${esc(raison)}</p>`:""}
+  <ul style="line-height:1.8;padding-left:20px;margin:10px 0">
+    <li>Lecture automatique de toutes tes AEM et documents France Travail (version gratuite : ${CONFIG.lecturesGratuites}, il t'en reste ${restant})</li>
+    <li>Mes employeurs : heures, salaires et taux horaire par employeur</li>
+    <li>Mes congés spectacles : indemnité Audiens estimée et rappel avant le 31 mars</li>
+    <li>Mon argent mois par mois et le simulateur « Et si… »</li>
+    <li>Les mises à jour des barèmes chaque année</li></ul>
+  <div class="num" style="font-size:28px;font-weight:600;margin:6px 0">${CONFIG.prix} <span class="small">une seule fois, à vie</span></div>
+  <div class="actions">${CONFIG.lienAchat?`<a class="b red" href="${esc(CONFIG.lienAchat)}" target="_blank" rel="noopener" style="text-decoration:none">Acheter la version complète</a>`:`<span class="b ghost" style="cursor:default">Achat bientôt disponible</span>`}</div>
+  <h3 style="margin-top:18px">J'ai déjà une clé</h3>
+  <div style="display:flex;gap:8px;flex-wrap:wrap"><input id="licKey" placeholder="Colle ta clé ici" style="flex:1;min-width:200px;border:1px solid var(--line);border-radius:8px;padding:10px;font:14px 'JetBrains Mono',monospace"><button class="b" id="licGo">Activer</button></div>
+  <div class="small" id="licMsg" style="margin-top:8px"></div>`;
+  m.classList.add("on");$("licGo").onclick=()=>activer($("licKey").value.trim())}
+async function activer(key){const msg=$("licMsg");if(!key){msg.textContent="Colle d'abord ta clé.";return}
+  msg.textContent="Vérification…";
+  if(!CONFIG.produitId){if(key.toUpperCase()===CONFIG.cleTest){localStorage.setItem(LSK,JSON.stringify({ok:true,key,test:true,date:iso(today())}));msg.innerHTML='<span class="ok">✅ Version complète activée.</span>';renderAll();return}msg.innerHTML='<span class="bad">Clé non reconnue.</span>';return}
+  try{const r=await fetch("https://api.lemonsqueezy.com/v1/licenses/activate",{method:"POST",headers:{"Accept":"application/json","Content-Type":"application/x-www-form-urlencoded"},body:new URLSearchParams({license_key:key,instance_name:"appareil-"+Math.random().toString(36).slice(2,8)})});
+    const j=await r.json();
+    if(j.activated&&(!CONFIG.produitId||String(j.meta&&j.meta.product_id)===String(CONFIG.produitId))){localStorage.setItem(LSK,JSON.stringify({ok:true,key,instance:j.instance&&j.instance.id,date:iso(today())}));msg.innerHTML='<span class="ok">✅ Version complète activée. Merci !</span>';renderAll()}
+    else msg.innerHTML=`<span class="bad">${/limit/i.test(j.error||"")?"Cette clé a déjà été activée sur le nombre maximum d'appareils.":"Clé non reconnue. Vérifie-la dans le mail reçu après l'achat."}</span>`}
+  catch(e){msg.innerHTML='<span class="bad">Pas de connexion internet : réessaie quand tu es connecté.</span>'}}
+
+/* ============ LECTURE DES DOCUMENTS (sans IA, sur l'appareil) ============ */
+const SRC={conges:"un document Congés Spectacles",aem:"une AEM",bulletin:"un bulletin de paie",contrat:"un contrat",notification:"une notification France Travail",paiement:"une attestation mensuelle France Travail",autre:"un document"};
+let scanLogs=[];
+const fileIn=document.createElement("input");fileIn.type="file";fileIn.multiple=true;fileIn.accept="application/pdf,image/*";fileIn.hidden=true;document.body.appendChild(fileIn);
+fileIn.onchange=()=>{const f=[...fileIn.files];fileIn.value="";handleFiles(f)};
+const DOC=`<svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M12 18v-6M9 15l3-3 3 3"/></svg>`;
+function renderScan(){
+  const restant=Math.max(0,CONFIG.lecturesGratuites-(S.lectures||0));
+  const inner=`<div class="scan" data-scan><div class="ico">${DOC}</div><div class="txt"><b>Ajoute tes AEM en PDF, c'est tout</b><span>Télécharge-les depuis ton espace France Travail (ou le mail de l'employeur) et dépose-les ici, plusieurs à la fois. Les heures, dates et montants se remplissent tout seuls.${isPro()?"":` <b>${restant} lecture${restant>1?"s":""} gratuite${restant>1?"s":""} restante${restant>1?"s":""}.</b>`}</span></div><button class="b amber" type="button">Ajouter mes PDF</button></div>`;
+  const logs=scanLogs.length?`<div class="scanlog">${scanLogs.map(l=>`<div class="slog"><div class="st">${l.st==="run"?'<span class="spin"></span>':l.st==="ok"?"✅":l.st==="warn"?"⚠️":"❌"}</div><div class="bd"><b>${esc(l.name)}</b><br>${l.html}</div>${l.undo?`<button class="link del" data-undo="${l.id}">Annuler</button>`:""}</div>`).join("")}</div>`:"";
+  const ol=$("onbLogs");if(ol){ol.innerHTML=logs?logs.replace('<div class="scanlog">',"").slice(0,-6):"";ol.querySelectorAll("[data-undo]").forEach(u=>u.onclick=()=>undoScan(u.dataset.undo))}
+  document.querySelectorAll(".scanbox").forEach(b=>{b.innerHTML=inner+logs;
+    const z=b.querySelector("[data-scan]");if(z){z.onclick=()=>fileIn.click();
+      z.ondragover=e=>{e.preventDefault();z.classList.add("drag")};z.ondragleave=()=>z.classList.remove("drag");
+      z.ondrop=e=>{e.preventDefault();z.classList.remove("drag");handleFiles([...e.dataTransfer.files])}}
+    b.querySelectorAll("[data-undo]").forEach(u=>u.onclick=()=>undoScan(u.dataset.undo));});
+}
+function renderDocs(){
+  const el=$("docsCard");if(!el)return;const L=S.documents||[];
+  if(!L.length){el.style.display="none";return}el.style.display="";
+  el.innerHTML=`<h2>Documents lus (${L.length})</h2><div class="tablewrap"><table><tr><th>Ajouté le</th><th>Fichier</th><th>Type</th><th>Ce qui a été repris</th></tr>${L.slice().reverse().map(d=>`<tr><td class="small mono">${fd(D(d.date))}</td><td>${esc(d.nom)}</td><td>${esc(SRC[d.type]||d.type)}</td><td class="small">${esc(d.resume)}</td></tr>`).join("")}</table></div>`;
+}
+async function loadPdfJs(){if(window.pdfjsLib)return;const add=src=>new Promise((ok,ko)=>{const s=document.createElement("script");s.src=src;s.onload=ok;s.onerror=ko;document.head.appendChild(s)});
+  await add("vendor/pdf.worker.min.js");await add("vendor/pdf.min.js")}
+async function pdfTexte(file){await loadPdfJs();const pdf=await pdfjsLib.getDocument({data:await file.arrayBuffer()}).promise;let text="";
+  for(let i=1;i<=Math.min(pdf.numPages,8);i++){const pg=await pdf.getPage(i);const tc=await pg.getTextContent();
+    const lines={};for(const it of tc.items){if(!it.str||!it.str.trim())continue;const y=Math.round(it.transform[5]/3);(lines[y]=lines[y]||[]).push([it.transform[4],it.str])}
+    text+=Object.keys(lines).map(Number).sort((a,b)=>b-a).map(y=>lines[y].sort((a,b)=>a[0]-b[0]).map(x=>x[1]).join("  ")).join("\n")+"\n"}
+  return text}
+/* --- analyse du texte --- */
+const nb=s=>{if(s==null)return null;let t=String(s).replace(/[\s  ]/g,"");if(/,\d{1,2}$/.test(t))t=t.replace(/\./g,"").replace(",",".");else if(/\.\d{3}$/.test(t))t=t.replace(/\./g,"");const v=parseFloat(t);return isNaN(v)?null:v};
+const dIso=s=>{const m=/(\d{2})[\/.\-](\d{2})[\/.\-](\d{4})/.exec(s||"");return m?`${m[3]}-${m[2]}-${m[1]}`:null};
+const DATE="(\\d{2}[\\/.\\-]\\d{2}[\\/.\\-]\\d{4})";
+function apres(T,labels,re,span=160){for(const l of labels){const m=l.exec(T);if(!m)continue;const zone=T.slice(m.index+m[0].length,m.index+m[0].length+span);const v=re.exec(zone);if(v)return v[1]}return null}
+const RE_NB=/(?<![\d\/.,])(\d{1,4}(?:[.,]\d{1,2})?)(?![\d\/])/;
+const RE_EUR=/(\d{1,3}(?:[   .]?\d{3})*[.,]\d{2})/;
+const RE_DATE=new RegExp(DATE);
+function analyser(text,nom){
+  const T=text.replace(/[  ]/g," ");const low=T.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"");
+  const fn=/\[(AEM|attestation[^\]]*)\]\s*(\d{4}-\d{2}-\d{2})\s+(.+?)\.pdf$/i.exec(nom||"");
+  const r={type:"autre",contrats:[],notification:null,paiements:[],conges:null,lisible:T.trim().length>40,doutes:""};
+  const estAEM=!!(fn&&/aem/i.test(fn[1]))||/attestation\s+employeur/.test(low)||/\baem\b/.test(low);
+  const estFT=/france travail|pole emploi/.test(low);
+  const estNotif=estFT&&!estAEM&&/(notification|decision|ouverture|readmission|reexamen|admission|date anniversaire)/.test(low);
+  const estPaie=!estAEM&&/bulletin de (paie|salaire)/.test(low);
+  if(estAEM||estPaie){r.type=estAEM?"aem":"bulletin";
+    let emp=fn?fn[3].trim():null;
+    if(!emp){const m=/(raison sociale|denomination|nom de l'employeur|employeur)\s*:?\s*([^\n]{2,80})/i.exec(T);if(m)emp=m[2].split(/\s{2,}/)[0].trim()}
+    let deb=null,fin=null;const pm=new RegExp("du\\s+"+DATE+"\\s+au\\s+"+DATE,"i").exec(T);
+    if(pm){deb=dIso(pm[1]);fin=dIso(pm[2])}
+    if(!deb){const a=apres(T,[/d[ée]but\s+(de\s+(la\s+)?p[ée]riode|du\s+contrat|d['’]emploi)?/i],RE_DATE,80);if(a)deb=dIso(a)}
+    if(!fin){const b=apres(T,[/fin\s+(de\s+(la\s+)?p[ée]riode|du\s+contrat|d['’]emploi)/i],RE_DATE,80);if(b)fin=dIso(b)}
+    if(!fin&&fn)fin=fn[2];if(!deb&&fin)deb=fin;if(!fin&&deb)fin=deb;
+    let heures=nb(apres(T,[/nombre\s+(total\s+)?d['’]\s?heures(\s+(effectu[ée]es|travaill[ée]es|r[ée]alis[ée]es))?/i,/heures\s+(effectu[ée]es|travaill[ée]es|r[ée]alis[ée]es)/i,/total\s+heures/i],RE_NB));
+    const cachets=nb(apres(T,[/nombre\s+de\s+cachets/i],RE_NB));
+    let doute="";
+    if(heures==null){const j=nb(apres(T,[/nombre\s+de\s+jours(\s+travaill[ée]s)?/i],RE_NB));if(j){heures=j*8;doute="heures déduites des jours travaillés (8 h par jour)"}}
+    const brut=nb(apres(T,[/salaires?\s+bruts?\s+soumis/i,/total\s+brut/i,/salaires?\s+bruts?/i,/montant\s+brut/i,/brut\s+(total|du\s+mois)?/i],RE_EUR,200));
+    const net=estPaie?nb(apres(T,[/net\s+(à|a)\s+payer/i,/net\s+pay[ée]/i],RE_EUR,120)):null;
+    const pmo=/emploi\s+occup[ée]\s*:?\s*([^\n]{2,60})/i.exec(T);
+    if(heures&&(heures>300||heures<=0))doute="nombre d'heures inhabituel";
+    if(heures&&brut&&(brut/heures<5||brut/heures>400))doute=(doute?doute+" · ":"")+"salaire horaire inhabituel";
+    r.contrats.push({employeur:emp,debut:deb,fin,heures:heures??null,cachets:cachets&&!heures?cachets:null,brut,net,poste:pmo?pmo[1].split(/\s{2,}/)[0].trim():null,nature:"travail"});
+    r.doutes=doute;
+  }else if(estNotif){r.type="notification";
+    const n={fin_contrat_ouverture:null,date_anniversaire:null,debut_indemnisation:null,aj_brute:null,annexe:null};
+    const da=apres(T,[/date\s+anniversaire/i,/jusqu['’]au/i,/fin\s+(de\s+(vos|tes|ses)\s+)?droits/i],RE_DATE,120);if(da)n.date_anniversaire=dIso(da);
+    const fo=apres(T,[/fin\s+de\s+(votre\s+)?(dernier\s+)?contrat(\s+de\s+travail)?(\s+retenu)?/i],RE_DATE,120);if(fo)n.fin_contrat_ouverture=dIso(fo);
+    const di=apres(T,[/(à|a)\s+compter\s+du/i,/(date\s+de\s+)?d[ée]but\s+(de\s+l['’]\s?)?indemnisation/i,/point\s+de\s+d[ée]part/i],RE_DATE,80);if(di)n.debut_indemnisation=dIso(di);
+    const aj=apres(T,[/allocation\s+journali[eè]re(\s+brute)?/i,/montant\s+(brut\s+)?journalier(\s+brut)?/i,/allocation\s+brute\s+journali[eè]re/i],RE_EUR,120);if(aj)n.aj_brute=nb(aj);
+    const ax=/annexe\s*(8|10|viii|x)\b/i.exec(T);if(ax)n.annexe=/^(8|viii)$/i.test(ax[1])?8:10;
+    if(n.date_anniversaire&&!n.fin_contrat_ouverture){/* la date anniversaire suffit */}
+    r.notification=n;
+  }
+  return r;
+}
+const isoOk=s=>typeof s==="string"&&/^\d{4}-\d{2}-\d{2}$/.test(s)&&!isNaN(D(s));
+const normE=s=>String(s||"").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"").replace(/\b(sas|sarl|sa|eurl|sasu|association|asso|ste|societe)\b/g,"").replace(/[^a-z0-9]/g,"");
+function sameEmp(a,b){const x=normE(a),y=normE(b);return x&&y&&(x===y||x.includes(y)||y.includes(x))}
+function applyResult(r,fileName,assetId){
+  const before=JSON.stringify(S);const done=[],warn=[];const type=SRC[r.type]?r.type:"autre";
+  for(const c of (Array.isArray(r.contrats)?r.contrats:[])){
+    if(!c||!c.employeur||!isoOk(c.debut)||!isoOk(c.fin)){warn.push("une période illisible (employeur ou dates manquants)");continue}
+    let deb=c.debut,fin=c.fin;if(fin<deb)[deb,fin]=[fin,deb];
+    const h=c.heures==null?null:num(c.heures),ca=c.cachets==null?null:num(c.cachets);
+    const t=c.nature==="enseignement"?"enseignement":c.nature==="formation"?"formation":(ca&&!h?"cachets":"heures");
+    const q=t==="cachets"?ca:h;
+    const doutes=[];if(q==null||q<=0)doutes.push("heures non trouvées");
+    if(annexe()===8&&t==="cachets")doutes.push("technicien payé au cachet : France Travail retient les heures réelles déclarées sur l'AEM, à demander à l'employeur");if(c.brut==null&&type!=="contrat")doutes.push("brut non trouvé");if(r.doutes&&!/\bnet\b/i.test(r.doutes))doutes.push(r.doutes);
+    const ex=S.contrats.find(x=>sameEmp(x.employeur,c.employeur)&&x.debut===deb&&x.fin===fin&&x.type===t)||S.contrats.find(x=>sameEmp(x.employeur,c.employeur)&&x.debut<=fin&&x.fin>=deb&&x.type===t&&(statutOf(x)==="prevu"||x.src==="contrat"||!x.src));
+    if(ex){ // fusion : AEM et paie priment sur le contrat
+      const fiable=type==="aem"||type==="bulletin";
+      if(q!=null&&(fiable||ex.quantite===""||ex.quantite==null))ex.quantite=q;
+      if(c.brut!=null&&(fiable||!ex.brut))ex.brut=num(c.brut);
+      if(c.net!=null&&(fiable||!ex.net))ex.net=num(c.net);
+      if(fiable){ex.debut=deb;ex.fin=fin;ex.statut="reel";ex.estime=false}
+      if(!ex.poste&&c.poste)ex.poste=c.poste;
+      if(type==="aem")ex.aem=true;if(assetId)ex.docs=[...new Set([...(ex.docs||[]),assetId])];
+      if(fiable&&!doutes.length)ex.aVerifier=false;if(fiable)ex.src=type;
+      done.push(`mis à jour : ${esc(ex.employeur)}, ${fd(D(ex.debut))} → ${fd(D(ex.fin))}`);
+    }else{
+      S.contrats.push({id:"c"+Date.now().toString(36)+Math.random().toString(36).slice(2,6),employeur:String(c.employeur).trim(),type:t,quantite:q??0,debut:deb,fin,brut:c.brut==null?"":num(c.brut),net:c.net==null?"":num(c.net),poste:c.poste||"",aem:type==="aem",paye:false,statut:type==="contrat"?"prevu":"reel",note:type==="contrat"?"Heures prévues au contrat":"",src:type,docs:assetId?[assetId]:[],aVerifier:doutes.length>0,doute:doutes.join(" · ")});
+      done.push(`ajouté : <b>${esc(c.employeur)}</b>, ${fd(D(deb))} → ${fd(D(fin))}, ${q!=null?(t==="cachets"?q+" cachet(s)":h1(q)):"? h"}${c.brut!=null?", "+eur(num(c.brut))+" brut":""}${doutes.length?' <span class="pill p-v">à vérifier</span>':""}`);
+    }
+  }
+  const n=r.notification;
+  if(n&&typeof n==="object"){
+    if(isoOk(n.fin_contrat_ouverture)){S.profil.finOuverture=n.fin_contrat_ouverture;done.push("fin du contrat d'ouverture : "+fd(D(n.fin_contrat_ouverture)))}
+    if(isoOk(n.date_anniversaire)){S.profil.dateAnnivForcee=n.date_anniversaire;done.push("date anniversaire : "+fd(D(n.date_anniversaire)))}
+    if(isoOk(n.debut_indemnisation)){S.profil.debutIndem=n.debut_indemnisation;done.push("début d'indemnisation : "+fd(D(n.debut_indemnisation)))}
+    if(n.aj_brute!=null&&num(n.aj_brute)>0){S.profil.ajNotifiee=num(n.aj_brute);done.push("allocation journalière : "+eur(num(n.aj_brute)))}
+    if(n.annexe==8||n.annexe==10){S.profil.annexe=String(n.annexe)}
+    if(S.profil.dateAnnivForcee&&S.profil.finOuverture&&iso(addMonths(D(S.profil.finOuverture),12))===S.profil.dateAnnivForcee)S.profil.dateAnnivForcee="";
+  }
+  for(const p of (Array.isArray(r.paiements)?r.paiements:[])){if(!p||!/^\d{4}-\d{2}$/.test(p.mois))continue;
+    const m=p.montant_brut!=null?num(p.montant_brut):(p.montant_net!=null?num(p.montant_net):null);
+    if(m!=null){S.areRecue[p.mois]=m;done.push(`ARE ${MOIS[+p.mois.slice(5)-1]} ${p.mois.slice(0,4)} : ${eur(m)}${p.montant_brut==null?" (net)":""}${p.jours_indemnises!=null?` · ${num(p.jours_indemnises)} jours payés`:""}`)}
+    if(p.aj_brute!=null&&num(p.aj_brute)>0&&num(p.aj_brute)!==num(S.profil.ajNotifiee)){S.profil.ajNotifiee=num(p.aj_brute);done.push("allocation journalière : "+eur(num(p.aj_brute)))}}
+  const cg=r.conges;if(cg&&typeof cg==="object"&&+cg.exercice_debut_annee>2000){const y=+cg.exercice_debut_annee;const m=cg.montant_brut!=null?num(cg.montant_brut):(cg.montant_net!=null?num(cg.montant_net):null);S.conges=S.conges||{};S.conges[y]={...(S.conges[y]||{}),demande:true,...(cg.verse&&m!=null?{recu:m}:{})};done.push(`congés spectacles ${y}-${y+1} : ${cg.verse&&m!=null?"indemnité reçue "+eur(m):"demande enregistrée"}`)}
+  if(done.length)S.documents=[...(S.documents||[]),{nom:fileName,date:iso(today()),type,asset:assetId||null,resume:done.map(x=>x.replace(/<[^>]+>/g,"")).join(" ; ")}];
+  return {done,warn,before,type};
+}
+const undoMap={};
+function undoScan(id){const b=undoMap[id];if(!b)return;adopt(JSON.parse(b));delete undoMap[id];const l=scanLogs.find(x=>x.id===id);if(l){l.st="warn";l.html="Annulé.";l.undo=false}save();renderAll()}
+let queue=Promise.resolve();
+function handleFiles(files){
+  files=files.filter(f=>/^image\//.test(f.type)||f.type==="application/pdf"||/\.pdf$/i.test(f.name||""));if(!files.length)return;
+  if(S.demo){S=VIDE();save();renderAll()}
+  for(const f of files){const id="s"+Date.now().toString(36)+Math.random().toString(36).slice(2,5);
+    const log={id,name:f.name||"Document",st:"run",html:"Lecture en cours…"};scanLogs.unshift(log);scanLogs=scanLogs.slice(0,15);
+    queue=queue.then(()=>scanOne(f,log)).catch(()=>{})}
+  renderScan();
+}
+function nomFichier(nom){const fn=/\[(AEM)\]\s*(\d{4}-\d{2}-\d{2})\s+(.+?)\.pdf$/i.exec(nom||"");return fn?{employeur:fn[3].trim(),date:fn[2]}:null}
+window.saisieDepuis=nom=>{const x=nomFichier(nom);openC();if(x){const f=$("cForm");f.employeur.value=x.employeur;f.debut.value=x.date;f.fin.value=x.date}};
+async function scanOne(f,log){
+  try{
+    if(/^image\//.test(f.type)){log.st="warn";log.html=`Les photos ne sont pas encore lues automatiquement. Envoie plutôt le PDF (espace France Travail ou mail de l'employeur), ou <button class="link" onclick="openC()">ajoute ce contrat à la main</button>.`;renderScan();return}
+    let hash="";try{const hb=await crypto.subtle.digest("SHA-256",await f.arrayBuffer());hash=[...new Uint8Array(hb)].slice(0,12).map(x=>x.toString(16).padStart(2,"0")).join("")}catch(e){}
+    const deja=(S.documents||[]).find(d=>(hash&&d.hash===hash)||(d.nom===f.name&&d.taille===f.size));
+    if(deja){log.st="warn";log.html=`Déjà lu le ${fd(D(deja.date))} : ignoré, rien n'a été ajouté en double.`;renderScan();return}
+    if(!isPro()&&(S.lectures||0)>=CONFIG.lecturesGratuites){log.st="warn";log.html=`Tes ${CONFIG.lecturesGratuites} lectures gratuites sont utilisées. <button class="link" onclick="openPay()">Passer à la version complète</button> ou <button class="link" onclick="saisieDepuis('${esc(f.name).replace(/'/g,"&#39;")}')">ajouter à la main</button>.`;renderScan();return}
+    const txt=await pdfTexte(f);
+    if(txt.replace(/\s/g,"").length<60){log.st="warn";log.html=`Ce PDF est une image scannée : je ne peux pas le lire. <button class="link" onclick="saisieDepuis('${esc(f.name).replace(/'/g,"&#39;")}')">Ajoute-le à la main</button>.`;renderScan();return}
+    const r=analyser(txt,f.name);
+    if(r.type==="autre"){log.st="warn";log.html=`Je n'ai pas reconnu ce document (ni AEM, ni fiche de paie, ni notification France Travail). <button class="link" onclick="saisieDepuis('${esc(f.name).replace(/'/g,"&#39;")}')">Ajouter à la main</button>`;renderScan();return}
+    const res=applyResult(r,f.name||"Document",null);
+    if(res.done.length){const d=S.documents[S.documents.length-1];d.hash=hash;d.taille=f.size;S.lectures=(S.lectures||0)+1}
+    if(!res.done.length){log.st="warn";log.html=`Lu comme ${SRC[res.type]}, mais rien d'utilisable.${res.warn.length?" "+res.warn.join(", "):""} <button class="link" onclick="saisieDepuis('${esc(f.name).replace(/'/g,"&#39;")}')">Ajouter à la main</button>`;renderScan();return}
+    scanLogs.forEach(l=>l.undo=false);undoMap[log.id]=res.before;log.undo=true;
+    log.st=res.warn.length||res.done.some(x=>x.includes("p-v"))?"warn":"ok";
+    log.html=`Lu comme ${SRC[res.type]} :<ul>${res.done.map(x=>`<li>${x}</li>`).join("")}${res.warn.map(x=>`<li class="bad">${esc(x)}</li>`).join("")}</ul>`;
+    save();renderAll();
+  }catch(e){log.st="err";log.html=`Lecture impossible de ce fichier. <button class="link" onclick="saisieDepuis('${esc(f.name||"").replace(/'/g,"&#39;")}')">Ajouter à la main</button><br><span class="tag">${esc((e&&e.message)||"erreur")}</span>`;renderAll()}
+}
+
+/* ============ EXPORT ============ */
+async function offer(filename,data){
+  const type=filename.endsWith(".csv")?"text/csv":"application/json";const blob=new Blob([data],{type});
+  try{const file=new File([blob],filename,{type});if(navigator.canShare&&navigator.canShare({files:[file]})&&/iphone|ipad|android/i.test(navigator.userAgent)){await navigator.share({files:[file],title:filename});return}}catch(e){if(e&&e.name==="AbortError")return}
+  const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=filename;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},1000);
+  $("copyBox").innerHTML=`<p class="small ok">Fichier « ${esc(filename)} » enregistré dans tes téléchargements.</p>`;
+}
+
+/* ============ SAUVEGARDE (sur l'appareil) ============ */
+const LS="mon-intermittence-v1";
+function lsGet(){try{return JSON.parse(localStorage.getItem(LS)||"null")}catch(e){return null}}
+function lsSet(){try{localStorage.setItem(LS,JSON.stringify(S));return true}catch(e){return false}}
+function save(){if(!lsSet())setBadge("⚠️ Sauvegarde impossible")}
+function setBadge(t){const b=$("saveBadge");if(b)b.textContent=t}
+function adopt(o){o=JSON.parse(JSON.stringify(o||{}));const v=VIDE();
+  S={...v,...o,profil:{...v.profil,...(o.profil||{})},bareme:{...v.bareme,...(o.bareme||{})},contrats:o.contrats||[],areRecue:o.areRecue||{},documents:o.documents||[],conges:o.conges||{}}}
+
+/* ============ APPLI INSTALLABLE ============ */
+let promptInstall=null;
+window.addEventListener("beforeinstallprompt",e=>{e.preventDefault();promptInstall=e;renderHeader()});
+const estInstallee=()=>window.matchMedia("(display-mode: standalone)").matches||navigator.standalone===true;
+function aideInstall(){const ios=/iphone|ipad|ipod/i.test(navigator.userAgent);const m=$("payMod");
+  if(promptInstall){promptInstall.prompt();promptInstall.userChoice.finally(()=>{promptInstall=null;renderHeader()});return}
+  m.querySelector(".card").innerHTML=`<div class="split"><h2>📲 Installer l'appli</h2><button class="link" onclick="$('payMod').classList.remove('on')">Fermer</button></div>
+  <p class="small">Une icône sur ton écran d'accueil, en plein écran, qui marche même sans réseau.</p>
+  <h3>Sur iPhone (Safari)</h3><ol style="line-height:1.8;padding-left:20px;margin:6px 0"><li>Touche le bouton <b>Partager</b> (le carré avec une flèche vers le haut)</li><li>Choisis <b>Sur l'écran d'accueil</b></li><li>Touche <b>Ajouter</b></li></ol>
+  <h3>Sur Android (Chrome)</h3><ol style="line-height:1.8;padding-left:20px;margin:6px 0"><li>Touche les <b>3 points</b> en haut à droite</li><li>Choisis <b>Installer l'application</b> ou <b>Ajouter à l'écran d'accueil</b></li></ol>
+  ${ios?'<div class="note">Tu es sur iPhone : suis les étapes « iPhone » ci-dessus, depuis Safari.</div>':""}`;
+  m.classList.add("on")}
+window.aideInstall=aideInstall;window.openPay=openPay;
+if("serviceWorker" in navigator&&location.protocol.startsWith("http"))navigator.serviceWorker.register("sw.js").catch(()=>{});
+
+(function init(){
+  const l=lsGet();if(l)adopt(l);
+  renderAll();const h=location.hash.slice(1);if(h&&$("s-"+h))go(h);
+})();
+</script>
+</body>
+</html>
